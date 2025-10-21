@@ -86,7 +86,7 @@
     a { color: #0ea5e9; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* History styling */
+    /* History styling - preserve margins of items */
     .history {
       background: #f8fafc;
       border-radius: 10px;
@@ -119,31 +119,6 @@
     .status-pending { color: #ef4444; font-weight: 700; }
 
     button[disabled] { opacity: 0.6; cursor: not-allowed; }
-
-    /* Toast styling */
-    #toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .toast {
-      padding: 12px 18px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 500;
-      min-width: 220px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      opacity: 0;
-      transform: translateX(100%);
-      transition: 0.5s;
-    }
-    .toast.info { background: #3b82f6; }
-    .toast.success { background: #10b981; }
-    .toast.error { background: #ef4444; }
   </style>
 </head>
 <body>
@@ -188,9 +163,6 @@
   </div>
 </div>
 
-<!-- Toast container -->
-<div id="toast-container"></div>
-
 <footer>
   <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
   <p>Design by <strong>Atech ICT Solution</strong></p>
@@ -203,27 +175,6 @@ const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 let userId = null;
 let username = null;
 
-// Toast function
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerText = message;
-  container.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateX(0)';
-  });
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    setTimeout(() => toast.remove(), 500);
-  }, 4000);
-}
-
-// User initialization
 try {
   const stored = localStorage.getItem('user');
   if (stored) {
@@ -240,8 +191,8 @@ if (!userId) {
 }
 
 if (!userId) {
-  showToast("Please log in to access the dashboard.", "error");
-  setTimeout(() => window.location.href = "index.html", 1500);
+  alert("Please log in to access the dashboard.");
+  window.location.href = "index.html";
 } else {
   document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
   document.getElementById("userIdText").innerText = `User ID: ${userId}`;
@@ -308,17 +259,12 @@ async function runVerify(reference) {
       localStorage.removeItem("ref");
       updateBalance();
       if (document.getElementById('history').style.display === 'block') loadHistory();
-      showToast("Payment verified successfully! Balance updated.", "success");
       return { ok: true, data };
-    } else {
-      showToast("Verification failed. Try again later.", "error");
-      return { ok: false, data };
-    }
+    } else return { ok: false, data };
   } catch (err) {
     console.error('verify error', err);
     verifyBtn.disabled = false;
     verifyBtn.innerText = prevText;
-    showToast("Verification error. Check console.", "error");
     return { ok: false, error: err };
   }
 }
@@ -330,7 +276,7 @@ async function tryAutoVerifyOnce() {
   if (!ref) return;
   try {
     const result = await runVerify(ref);
-    if (result.ok) showToast("Payment verified automatically — balance updated.", "success");
+    if (result.ok) { try { alert("Payment verified automatically — balance updated."); } catch {} }
     else console.log('Auto-verify attempted; not yet verified.', result);
   } catch (e) { console.error('Auto-verify failure', e); }
 }
@@ -368,10 +314,9 @@ document.getElementById("addFundBtn").onclick = () => fundModal.style.display = 
 document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
 
 document.getElementById("payNowBtn").onclick = async () => {
-  if (!userId) return showToast("Please log in to add funds.", "error");
+  if (!userId) return alert("Please log in to add funds.");
   const amount = parseInt(document.getElementById("fundAmount").value);
-  if (!amount || amount < 50) return showToast("Please enter at least ₦50", "error");
-
+  if (!amount || amount < 50) return alert("Please enter at least ₦50");
   fundModal.style.display = "none";
   const res = await fetch(`${baseURL}/create-transaction`, {
     method: "POST",
@@ -382,4 +327,26 @@ document.getElementById("payNowBtn").onclick = async () => {
   if (data.checkoutUrl) {
     localStorage.setItem("ref", data.reference);
     window.open(data.checkoutUrl, "_blank");
-    showToast("Payment page opened. After payment, verification will
+    alert("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or click Verify.");
+  } else alert("Error: " + (data.error || JSON.stringify(data)));
+};
+
+// Manual verify
+document.getElementById("verifyBtn").onclick = async () => {
+  if (!userId) return alert("Please log in to verify payments.");
+  const ref = localStorage.getItem("ref");
+  if (!ref) return alert("No pending transaction to verify.");
+  const result = await runVerify(ref);
+  if (result.ok) {
+    alert("Payment verified successfully! Balance updated.");
+    localStorage.removeItem("ref");
+    updateBalance();
+    if (document.getElementById('history').style.display === 'block') loadHistory();
+  } else alert("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."));
+};
+
+// Get NIN button
+document.getElementById("getNINBtn").onclick = () => { window.location.href = "ni.html"; };
+</script>
+</body>
+</html>
