@@ -48,21 +48,11 @@
       transition: 0.3s;
       margin-top: 10px;
     }
-    button:hover {
-      background: #0284c7;
-    }
-    .green-btn {
-      background: #10b981;
-    }
-    .green-btn:hover {
-      background: #059669;
-    }
-    .gray-btn {
-      background: #64748b;
-    }
-    .gray-btn:hover {
-      background: #475569;
-    }
+    button:hover { background: #0284c7; }
+    .green-btn { background: #10b981; }
+    .green-btn:hover { background: #059669; }
+    .gray-btn { background: #64748b; }
+    .gray-btn:hover { background: #475569; }
     #fundModal {
       display: none;
       position: fixed;
@@ -93,13 +83,10 @@
       color: #64748b;
       font-size: 0.9rem;
     }
-    a {
-      color: #0ea5e9;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
+    a { color: #0ea5e9; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* History styling - preserve margins of items */
     .history {
       background: #f8fafc;
       border-radius: 10px;
@@ -109,16 +96,13 @@
       max-height: 200px;
       overflow-y: auto;
       font-size: 0.9rem;
-      display: none; /* hidden by default (collapsed) */
-      transition: max-height 0.25s ease;
+      display: none;
     }
     .history-item {
       padding: 6px;
       border-bottom: 1px solid #e5e7eb;
     }
-    .history-item:last-child {
-      border-bottom: none;
-    }
+    .history-item:last-child { border-bottom: none; }
     .history-toggle {
       display: inline-block;
       margin-bottom: 8px;
@@ -130,130 +114,64 @@
       cursor: pointer;
     }
 
-    /* Status styling per request (minimal additions) */
-    .status-success {
-      color: #10b981; /* green - keep as is */
-      font-weight: 600;
-    }
-    .status-pending {
-      color: #b45309; /* dark yellow / amber-700 */
-      font-weight: 700;
-    }
-    .status-debit {
-      color: #ef4444; /* red for debit */
-      font-weight: 600;
-    }
+    /* Status colors */
+    .status-success { color: #10b981; font-weight: 600; }
+    .status-pending { color: #ef4444; font-weight: 700; }
 
-    button[disabled] {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    /* Modern verify notification (custom toast) */
-    .verify-toast-wrap {
-      position: fixed;
-      right: 20px;
-      bottom: 28px;
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: flex-end;
-      pointer-events: none;
-    }
-    .verify-toast {
-      min-width: 260px;
-      max-width: 360px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(250,250,250,0.95));
-      box-shadow: 0 8px 30px rgba(2,8,23,0.12);
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      pointer-events: auto;
-      transform: translateY(8px);
-      opacity: 0;
-      transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s;
-      border-left: 6px solid transparent;
-    }
-    .verify-toast.show { transform: translateY(0); opacity: 1; }
-    .verify-toast.success { border-left-color: #10b981; }
-    .verify-toast.error { border-left-color: #ef4444; }
-    .verify-toast .icon {
-      width: 44px; height: 44px; border-radius: 10px; display:grid; place-items:center;
-      background: rgba(15,23,42,0.04); font-weight:800;
-    }
-    .verify-toast .content {
-      text-align: left; flex:1;
-    }
-    .verify-toast .title { font-weight:800; font-size:14px; color:#0f172a; margin-bottom:2px; }
-    .verify-toast .desc { font-size:13px; color:#475569; line-height:1.15; }
-    .verify-toast .actions { margin-left:8px; display:flex; gap:8px; align-items:center; }
-    .verify-toast .btn { padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
-    .verify-toast .btn.primary { background:#0ea5e9; color:white; }
-    .verify-toast .btn.ghost { background:transparent; color:#0f172a; border:1px solid rgba(15,23,42,0.06); }
-
-    /* small helper for time text */
-    .tx-meta { display:block; color:#6b7280; font-size:12px; margin-top:6px; }
-    .tx-extra { display:block; color:#374151; font-size:12px; margin-top:4px; }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-  <header>9jame Dashboard</header>
+<header>9jame Dashboard</header>
 
-  <div class="container">
-    <h2 id="welcomeText">Welcome, Guest</h2>
-    <p id="userIdText">User ID: -</p>
+<div class="container">
+  <h2 id="welcomeText">Welcome, Guest</h2>
+  <p id="userIdText">User ID: -</p>
 
-    <div class="balance-box">
-      <p>Available Balance:</p>
-      <p class="balance-amount">₦<span id="balance">0</span></p>
-    </div>
-
-    <button id="addFundBtn">Add Fund</button>
-    <button id="verifyBtn" class="green-btn">Verify Payment</button>
-
-    <hr style="margin:20px 0;">
-
-    <h3 style="margin-bottom:6px;">Transaction History</h3>
-    <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
-    <div id="history" class="history" aria-hidden="true">Loading...</div>
-
-    <hr style="margin:20px 0;">
-
-    <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
-    <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
-
-    <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
+  <div class="balance-box">
+    <p>Available Balance:</p>
+    <p class="balance-amount">₦<span id="balance">0</span></p>
   </div>
 
-  <!-- Add Fund Modal -->
-  <div id="fundModal">
-    <div class="modal-content">
-      <h3>Add Fund</h3>
-      <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
-      <div>
-        <button id="payNowBtn">Pay Now</button>
-        <button id="cancelBtn" class="gray-btn">Cancel</button>
-      </div>
+  <button id="addFundBtn">Add Fund</button>
+  <button id="verifyBtn" class="green-btn">Verify Payment</button>
+
+  <hr style="margin:20px 0;">
+
+  <h3 style="margin-bottom:6px;">Transaction History</h3>
+  <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
+  <div id="history" class="history" aria-hidden="true">Loading...</div>
+
+  <hr style="margin:20px 0;">
+
+  <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
+  <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
+
+  <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
+</div>
+
+<!-- Add Fund Modal -->
+<div id="fundModal">
+  <div class="modal-content">
+    <h3>Add Fund</h3>
+    <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
+    <div>
+      <button id="payNowBtn">Pay Now</button>
+      <button id="cancelBtn" class="gray-btn">Cancel</button>
     </div>
   </div>
+</div>
 
-  <!-- Verify toast wrapper -->
-  <div class="verify-toast-wrap" id="verifyToastWrap" aria-live="polite" aria-atomic="true"></div>
-
-  <footer>
-    <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
-    <p>Design by <strong>Atech ICT Solution</strong></p>
-  </footer>
+<footer>
+  <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
+  <p>Design by <strong>Atech ICT Solution</strong></p>
+</footer>
 
 <script>
 const baseURL = "https://9jame.netlify.app/.netlify/functions";
 const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 
-// --- Auth check: require login (no access to dashboard if not logged in) ---
 let userId = null;
 let username = null;
 
@@ -261,14 +179,9 @@ try {
   const stored = localStorage.getItem('user');
   if (stored) {
     const obj = JSON.parse(stored);
-    if (obj && obj.userId) {
-      userId = obj.userId;
-      username = obj.username || obj.email || "User";
-    }
+    if (obj && obj.userId) { userId = obj.userId; username = obj.username || obj.email || "User"; }
   }
-} catch (e) {
-  // ignore parse errors
-}
+} catch {}
 
 if (!userId) {
   const uid = localStorage.getItem('userId');
@@ -285,188 +198,54 @@ if (!userId) {
   document.getElementById("userIdText").innerText = `User ID: ${userId}`;
 }
 
-/* ========== Custom verify notification ========== */
-function showVerifyNotification({ title='Notification', desc='', type='success', timeout=4500, actions=[] } = {}) {
-  const wrap = document.getElementById('verifyToastWrap');
-  const el = document.createElement('div');
-  el.className = `verify-toast ${type}`;
-  el.innerHTML = `
-    <div class="icon">${ type === 'success' ? '✓' : '!' }</div>
-    <div class="content">
-      <div class="title">${title}</div>
-      <div class="desc">${desc}</div>
-    </div>
-    <div class="actions">
-      ${actions.map(a=>`<button class="btn ${a.primary ? 'primary' : 'ghost'}" data-act="${a.action || ''}">${a.label}</button>`).join('')}
-    </div>
-  `;
-  wrap.appendChild(el);
-  // attach action handlers
-  el.querySelectorAll('.btn').forEach(b=>{
-    b.addEventListener('click', (e)=>{
-      const act = b.getAttribute('data-act');
-      try { if(act === 'view-history') { document.getElementById('historyToggleBtn').click(); } 
-            else if(act === 'close') { /* nothing */ } 
-            else if(typeof window[act] === 'function') window[act]();
-      } catch(e){ console.error(e); }
-      // remove toast immediately
-      el.classList.remove('show');
-      setTimeout(()=>el.remove(), 280);
-    });
-  });
-  // show
-  requestAnimationFrame(()=> el.classList.add('show'));
-  // auto remove
-  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(), 300); }, timeout);
-}
-
-/* ===== Helpers: normalize + format amounts (handles Paystack kobo heuristic) ===== */
-function formatAmountRaw(raw) {
-  if (raw === undefined || raw === null || raw === '') return NaN;
-  const n = Number(raw);
-  return isNaN(n) ? NaN : n;
-}
-
-function toCurrency(n) {
-  if (n === null || n === undefined || isNaN(Number(n))) return '';
+// Balance
+async function updateBalance() {
+  if (!userId) return;
   try {
-    const f = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
-    return f.format(Math.round(Number(n)));
-  } catch (e) {
-    return `₦${Math.round(Number(n))}`;
-  }
+    const res = await fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}.json`);
+    const data = await res.json();
+    document.getElementById("balance").innerText = data?.balance || 0;
+  } catch { document.getElementById("balance").innerText = "0"; }
 }
 
-function normalizeTx(tx) {
-  const t = Object.assign({}, tx);
-
-  // common amount fallbacks
-  const rawAmt = t.amount ?? t.value ?? (t.data && (t.data.amount || t.data.amount_paid)) ?? t.amount_paid ?? t.amt;
-  const amtNum = formatAmountRaw(rawAmt);
-
-  // detect paystack-ish: check common keys for gateway/provider
-  const sourceHint = (t.source || t.gateway || t.provider || t.paymentProvider || (t.data && (t.data.gateway || t.data.provider)) || '').toString().toLowerCase();
-  t._isPaystack = sourceHint.includes('paystack') || sourceHint.includes('paystack_ng') || sourceHint.includes('paystack_com');
-
-  // Paystack often stores amount in kobo — heuristic: if marked paystack and amount >=100 and divisible by 100 -> divide by 100
-  t._rawAmount = isNaN(amtNum) ? null : amtNum;
-  if (t._rawAmount !== null) {
-    if (t._isPaystack && Math.abs(t._rawAmount) >= 100 && Math.round(t._rawAmount) % 100 === 0) {
-      t._amount = t._rawAmount / 100;
-    } else {
-      t._amount = t._rawAmount;
-    }
-  } else {
-    t._amount = null;
-  }
-
-  // normalize timestamp candidates
-  const tsCandidates = [t.timestamp, t.createdAt, t.verifiedAt, t.date, t.time, t._ts];
-  const foundTs = tsCandidates.find(x => x !== undefined && x !== null);
-  t._ts = foundTs ? new Date(foundTs).getTime() : Date.now();
-
-  // normalize type/status/action
-  t._type = (t.type || t.direction || '').toString().toLowerCase();
-  t._action = (t.action || '').toString().toLowerCase();
-  t._status = (t.status || t.state || (t.data && (t.data.status || t.data.gateway_status)) || '').toString().toLowerCase();
-
-  // friendly date label
-  try { t._labelWhen = new Date(t._ts).toLocaleString(); } catch(e) { t._labelWhen = String(t._ts); }
-  return t;
-}
-
-/* ===== Render helper ===== */
-function renderHistoryList(txs, container) {
-  if (!txs || txs.length === 0) {
-    container.innerHTML = "No transactions yet.";
-    return;
-  }
-
-  container.innerHTML = txs.map(tx => {
-    const amountDisplay = (tx._amount !== null && tx._amount !== undefined) ? toCurrency(tx._amount) :
-                          (tx._rawAmount !== null && tx._rawAmount !== undefined ? toCurrency(tx._rawAmount) : '');
-
-    const statusRaw = (tx._status || '').toLowerCase();
-    let statusClass = 'status-debit';
-    let statusLabel = (tx.status || tx.state || '').toString().toUpperCase() || (tx._action ? tx._action.toUpperCase() : 'TX');
-
-    if (statusRaw === 'success' || statusRaw === 'verified' || statusRaw === 'completed') {
-      statusClass = 'status-success';
-      statusLabel = 'SUCCESS';
-    } else if (statusRaw === 'pending' || statusRaw === 'processing') {
-      statusClass = 'status-pending';
-      statusLabel = 'PENDING';
-    } else if (tx._type === 'credit' || (tx._amount !== null && Number(tx._amount) > 0 && (tx._action === 'credit' || tx._type === 'credit'))) {
-      statusClass = 'status-success';
-      statusLabel = 'CREDIT';
-    } else if (tx._type === 'debit' || (tx._amount !== null && Number(tx._amount) < 0)) {
-      statusClass = 'status-debit';
-      statusLabel = 'DEBIT';
-    } else {
-      statusClass = 'status-debit';
-      statusLabel = (tx._action || tx._type || 'TX').toString().toUpperCase();
-    }
-
-    const ninInfo = tx.nin ? `<div class="tx-extra">NIN: ${String(tx.nin)}</div>` : '';
-    const actionInfo = tx.action ? `<div class="tx-extra">Action: ${tx.action}</div>` : '';
-    const ref = tx.reference || tx.ref || tx.id || (tx.data && (tx.data.reference || tx.data.id)) || '';
-
-    return `
-      <div class="history-item" data-ref="${ref}">
-        <strong>${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
-        <small class="tx-meta">${tx._labelWhen}</small>
-        ${ninInfo}
-        ${actionInfo}
-        ${ref ? `<div class="tx-extra">Ref: ${ref}</div>` : ''}
-      </div>
-    `;
-  }).join('');
-}
-
-/* ===== New loadHistory: fetch both locations, merge, normalize, show ALL txs (including Paystack) ===== */
+// History
 async function loadHistory() {
   const historyDiv = document.getElementById("history");
-  if (!userId) {
-    historyDiv.innerHTML = "No user.";
-    return;
-  }
+  if (!userId) { historyDiv.innerHTML = "No user."; return; }
   historyDiv.innerHTML = "Loading...";
   try {
-    const [res1, res2] = await Promise.all([
-      fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`),
-      fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}/transactions.json`)
-    ]);
-    const data1 = await res1.json().catch(()=>null);
-    const data2 = await res2.json().catch(()=>null);
+    const res = await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`);
+    const data = await res.json();
+    if (!data) { historyDiv.innerHTML = "No transactions yet."; return; }
+    const txs = Object.values(data).reverse();
 
-    const txs1 = data1 ? (Array.isArray(data1) ? data1 : Object.values(data1)) : [];
-    const txs2 = data2 ? (Array.isArray(data2) ? data2 : Object.values(data2)) : [];
-
-    // merge, normalize, sort reverse-chronological
-    const merged = [...txs1, ...txs2].map(normalizeTx).sort((a,b) => b._ts - a._ts);
-
-    if (!merged || merged.length === 0) {
-      historyDiv.innerHTML = "No transactions yet.";
-      return;
-    }
-
-    // render all transactions (not only debit)
-    renderHistoryList(merged, historyDiv);
-  } catch (err) {
-    console.error(err);
-    historyDiv.innerHTML = "Failed to load history.";
-  }
+    historyDiv.innerHTML = txs.map(tx => {
+      const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
+      let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
+      let statusClass = '';
+      if (statusRaw === 'success' || statusRaw === 'verified') { statusClass = 'status-success'; statusLabel = 'SUCCESS'; }
+      else if (statusRaw === 'pending') { statusClass = 'status-pending'; statusLabel = 'PENDING'; }
+      const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();
+      const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');
+      return `
+        <div class="history-item">
+          <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
+          <small>${when}</small>
+        </div>
+      `;
+    }).join('');
+  } catch (err) { console.error(err); historyDiv.innerHTML = "Failed to load history."; }
 }
 
-/* ========== VERIFY function used by manual button and auto-on-enter/focus ========== */
+updateBalance();
+
+// Verify
 async function runVerify(reference) {
   if (!userId || !reference) return { ok: false, message: "No reference or user." };
-
   const verifyBtn = document.getElementById('verifyBtn');
   const prevText = verifyBtn.innerText;
   verifyBtn.disabled = true;
   verifyBtn.innerText = 'Verifying...';
-
   try {
     const res = await fetch(`${baseURL}/verify-transaction`, {
       method: "POST",
@@ -474,101 +253,43 @@ async function runVerify(reference) {
       body: JSON.stringify({ reference, userId })
     });
     const data = await res.json();
-
     verifyBtn.disabled = false;
     verifyBtn.innerText = prevText;
-
     if (data.status === "ok") {
-      // success: update balance & history first
       localStorage.removeItem("ref");
-      await updateBalance();
-      if (document.getElementById('history').style.display === 'block') await loadHistory();
-
-      // COMPLETE toast (green) - uses your existing CSS .verify-toast.success
-      const amountFromRes = data.amount || (data.data && (data.data.amount || data.data.amount_paid)) || '';
-      // normalize amount if paystack-like (data.data.amount may be in kobo); best-effort conversion:
-      let amtText = '';
-      try {
-        let amtNum = amountFromRes !== '' ? Number(amountFromRes) : NaN;
-        if (!isNaN(amtNum) && amtNum !== 0) {
-          // if looks like kobo (>=100 and divisible by 100) convert
-          if (Math.abs(amtNum) >= 100 && Math.round(amtNum) % 100 === 0) amtNum = amtNum / 100;
-          amtText = `₦${Math.round(amtNum).toLocaleString()}`;
-        }
-      } catch(e){ amtText = ''; }
-
-      const refText = reference || data.reference || (data.data && (data.data.reference || data.data.id)) || '';
-      const descParts = [];
-      if (amtText) descParts.push(amtText);
-      if (refText) descParts.push(`Ref: ${refText}`);
-      const desc = descParts.length ? descParts.join(' — ') : 'Transaction completed successfully.';
-
-      showVerifyNotification({
-        title: 'Complete',
-        desc,
-        type: 'success',
-        timeout: 6000,
-        actions: [{ label: 'View history', action: 'view-history', primary: true }]
-      });
-
+      updateBalance();
+      if (document.getElementById('history').style.display === 'block') loadHistory();
       return { ok: true, data };
-    } else {
-      // pending or not verified yet
-      showVerifyNotification({
-        title: 'Verification pending',
-        desc: (data.error || 'Payment not verified yet. Try again after a while.'),
-        type: 'error',
-        timeout: 4500,
-        actions: [{ label: 'OK', action: 'close' }]
-      });
-      return { ok: false, data };
-    }
+    } else return { ok: false, data };
   } catch (err) {
     console.error('verify error', err);
     verifyBtn.disabled = false;
     verifyBtn.innerText = prevText;
-
-    showVerifyNotification({
-      title: 'Verification failed',
-      desc: 'Could not reach verification service. Check connection or try later.',
-      type: 'error',
-      timeout: 5000,
-      actions: [{ label: 'OK', action: 'close' }]
-    });
-
     return { ok: false, error: err };
   }
 }
 
-/* ========== Auto-verify ONCE when entering dashboard or returning to it (focus). ========== */
+// Auto-verify once
 async function tryAutoVerifyOnce() {
   if (!userId) return;
   const ref = localStorage.getItem('ref');
   if (!ref) return;
   try {
     const result = await runVerify(ref);
-    if (result.ok) {
-      // notification already shown in runVerify
-      console.log('Auto-verify success');
-    } else {
-      console.log('Auto-verify attempted; not yet verified.', result);
-    }
-  } catch (e) {
-    console.error('Auto-verify failure', e);
-  }
+    if (result.ok) { try { alert("Payment verified automatically — balance updated."); } catch {} }
+    else console.log('Auto-verify attempted; not yet verified.', result);
+  } catch (e) { console.error('Auto-verify failure', e); }
 }
 
-// Try auto-verify when page loads (but after we set user info)
 tryAutoVerifyOnce();
 
-// Also try auto-verify when window regains focus (i.e., user returns to dashboard)
 window.addEventListener('focus', () => {
   updateBalance();
   if (document.getElementById('history').style.display === 'block') loadHistory();
   tryAutoVerifyOnce();
 });
 
-/* ========== History toggle logic (collapsed drawer) ========== */
+// History toggle
 const historyToggleBtn = document.getElementById('historyToggleBtn');
 historyToggleBtn.addEventListener('click', async () => {
   const historyDiv = document.getElementById('history');
@@ -579,7 +300,6 @@ historyToggleBtn.addEventListener('click', async () => {
     historyToggleBtn.setAttribute('aria-expanded', 'false');
     historyToggleBtn.innerText = 'View History';
   } else {
-    // open and load history
     historyDiv.style.display = 'block';
     historyDiv.setAttribute('aria-hidden', 'false');
     historyToggleBtn.setAttribute('aria-expanded', 'true');
@@ -588,7 +308,7 @@ historyToggleBtn.addEventListener('click', async () => {
   }
 });
 
-/* ========== Modal logic (unchanged) ========== */
+// Modal
 const fundModal = document.getElementById("fundModal");
 document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
 document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
@@ -607,32 +327,26 @@ document.getElementById("payNowBtn").onclick = async () => {
   if (data.checkoutUrl) {
     localStorage.setItem("ref", data.reference);
     window.open(data.checkoutUrl, "_blank");
-    alert("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or you may click Verify.");
-  } else {
-    alert("Error: " + (data.error || JSON.stringify(data)));
-  }
+    alert("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or click Verify.");
+  } else alert("Error: " + (data.error || JSON.stringify(data)));
 };
 
-/* ========== Manual Verify Payment (uses runVerify which now shows modern notification) ========== */
+// Manual verify
 document.getElementById("verifyBtn").onclick = async () => {
   if (!userId) return alert("Please log in to verify payments.");
   const ref = localStorage.getItem("ref");
   if (!ref) return alert("No pending transaction to verify.");
   const result = await runVerify(ref);
   if (result.ok) {
-    // runVerify already showed modern success notification
+    alert("Payment verified successfully! Balance updated.");
     localStorage.removeItem("ref");
     updateBalance();
     if (document.getElementById('history').style.display === 'block') loadHistory();
-  } else {
-    // runVerify already showed notification explaining pending or error
-  }
+  } else alert("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."));
 };
 
 // Get NIN button
-document.getElementById("getNINBtn").onclick = () => {
-  window.location.href = "ni.html";
-};
+document.getElementById("getNINBtn").onclick = () => { window.location.href = "ni.html"; };
 </script>
 </body>
 </html>
