@@ -130,20 +130,73 @@
       cursor: pointer;
     }
 
-    /* Status styling per request */
+    /* Status styling per request (minimal additions) */
     .status-success {
-      color: #10b981; /* green */
+      color: #10b981; /* green - keep as is */
       font-weight: 600;
     }
     .status-pending {
-      color: #ef4444; /* red */
-      font-weight: 700; /* bold for pending */
+      color: #b45309; /* dark yellow / amber-700 */
+      font-weight: 700;
+    }
+    .status-debit {
+      color: #ef4444; /* red for debit */
+      font-weight: 600;
     }
 
     button[disabled] {
       opacity: 0.6;
       cursor: not-allowed;
     }
+
+    /* Modern verify notification (custom toast) */
+    .verify-toast-wrap {
+      position: fixed;
+      right: 20px;
+      bottom: 28px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .verify-toast {
+      min-width: 260px;
+      max-width: 360px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(250,250,250,0.95));
+      box-shadow: 0 8px 30px rgba(2,8,23,0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      pointer-events: auto;
+      transform: translateY(8px);
+      opacity: 0;
+      transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s;
+      border-left: 6px solid transparent;
+    }
+    .verify-toast.show { transform: translateY(0); opacity: 1; }
+    .verify-toast.success { border-left-color: #10b981; }
+    .verify-toast.error { border-left-color: #ef4444; }
+    .verify-toast .icon {
+      width: 44px; height: 44px; border-radius: 10px; display:grid; place-items:center;
+      background: rgba(15,23,42,0.04); font-weight:800;
+    }
+    .verify-toast .content {
+      text-align: left; flex:1;
+    }
+    .verify-toast .title { font-weight:800; font-size:14px; color:#0f172a; margin-bottom:2px; }
+    .verify-toast .desc { font-size:13px; color:#475569; line-height:1.15; }
+    .verify-toast .actions { margin-left:8px; display:flex; gap:8px; align-items:center; }
+    .verify-toast .btn { padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+    .verify-toast .btn.primary { background:#0ea5e9; color:white; }
+    .verify-toast .btn.ghost { background:transparent; color:#0f172a; border:1px solid rgba(15,23,42,0.06); }
+
+    /* small helper for time text */
+    .tx-meta { display:block; color:#6b7280; font-size:12px; margin-top:6px; }
+    .tx-extra { display:block; color:#374151; font-size:12px; margin-top:4px; }
   </style>
 </head>
 <body>
@@ -188,6 +241,9 @@
     </div>
   </div>
 
+  <!-- Verify toast wrapper -->
+  <div class="verify-toast-wrap" id="verifyToastWrap" aria-live="polite" aria-atomic="true"></div>
+
   <footer>
     <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
     <p>Design by <strong>Atech ICT Solution</strong></p>
@@ -229,7 +285,42 @@ if (!userId) {
   document.getElementById("userIdText").innerText = `User ID: ${userId}`;
 }
 
-// --- Balance & History functions ---
+/* ========== Custom verify notification ========== */
+function showVerifyNotification({ title='Notification', desc='', type='success', timeout=4500, actions=[] } = {}) {
+  const wrap = document.getElementById('verifyToastWrap');
+  const el = document.createElement('div');
+  el.className = `verify-toast ${type}`;
+  el.innerHTML = `
+    <div class="icon">${ type === 'success' ? '✓' : '!' }</div>
+    <div class="content">
+      <div class="title">${title}</div>
+      <div class="desc">${desc}</div>
+    </div>
+    <div class="actions">
+      ${actions.map(a=>`<button class="btn ${a.primary ? 'primary' : 'ghost'}" data-act="${a.action || ''}">${a.label}</button>`).join('')}
+    </div>
+  `;
+  wrap.appendChild(el);
+  // attach action handlers
+  el.querySelectorAll('.btn').forEach(b=>{
+    b.addEventListener('click', (e)=>{
+      const act = b.getAttribute('data-act');
+      try { if(act === 'view-history') { document.getElementById('historyToggleBtn').click(); } 
+            else if(act === 'close') { /* nothing */ } 
+            else if(typeof window[act] === 'function') window[act]();
+      } catch(e){ console.error(e); }
+      // remove toast immediately
+      el.classList.remove('show');
+      setTimeout(()=>el.remove(), 280);
+    });
+  });
+  // show
+  requestAnimationFrame(()=> el.classList.add('show'));
+  // auto remove
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(), 300); }, timeout);
+}
+
+/* ========== Balance & History functions ========== */
 async function updateBalance() {
   if (!userId) return;
   try {
@@ -250,15 +341,44 @@ async function loadHistory() {
   }
   historyDiv.innerHTML = "Loading...";
   try {
-    const res = await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`);
-    const data = await res.json();
-    if (!data) {
-      historyDiv.innerHTML = "No transactions yet.";
+    // fetch both possible locations:
+    // 1) old structure: /transactions/{userId}
+    // 2) ni.html structure: /users/{userId}/transactions
+    const [res1, res2] = await Promise.all([
+      fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`),
+      fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}/transactions.json`)
+    ]);
+    const data1 = await res1.json().catch(()=>null);
+    const data2 = await res2.json().catch(()=>null);
+
+    const txs1 = data1 ? Object.values(data1) : [];
+    const txs2 = data2 ? Object.values(data2) : [];
+
+    // merge and sort reverse-chronological by timestamp/createdAt fields if available
+    const merged = [...txs1, ...txs2].map(tx => {
+      // normalize timestamp for sorting
+      const ts = tx.timestamp || tx.createdAt || tx.verifiedAt || tx.date || Date.now();
+      return { ...tx, _ts: new Date(ts).getTime() || Date.now() };
+    }).sort((a,b)=> b._ts - a._ts);
+
+    // Filter: only show DEBIT transactions (include generate action from ni.html)
+    const debitTxs = merged.filter(tx => {
+      try {
+        const type = (tx.type || tx.direction || tx.action || '').toString().toLowerCase();
+        const isDebitFlag = tx.isDebit === true || tx.is_debit === true;
+        const amountNegative = tx.amount !== undefined && !isNaN(Number(tx.amount)) && Number(tx.amount) < 0;
+        return type === 'debit' || isDebitFlag || amountNegative || type === 'generate';
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (!debitTxs || debitTxs.length === 0) {
+      historyDiv.innerHTML = "No debit transactions.";
       return;
     }
-    const txs = Object.values(data).reverse();
 
-    historyDiv.innerHTML = txs.map(tx => {
+    historyDiv.innerHTML = debitTxs.map(tx => {
       const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
       let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
       let statusClass = '';
@@ -270,17 +390,24 @@ async function loadHistory() {
         statusClass = 'status-pending';
         statusLabel = 'PENDING';
       } else {
-        statusClass = '';
-        statusLabel = (tx.status || statusLabel);
+        // if it's a debit/generate but not success/pending => mark as debit (red)
+        statusClass = 'status-debit';
+        statusLabel = (tx.action ? (tx.action.toString().toUpperCase()) : (tx.status || 'DEBIT').toString().toUpperCase());
       }
 
-      const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();
-      const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');
+      const when = new Date(tx.createdAt || tx.timestamp || tx.verifiedAt || Date.now()).toLocaleString();
+      const amountDisplay = (tx.amount !== undefined && tx.amount !== null) ? tx.amount : (tx.value || '');
+
+      // include NIN info if present (from ni.html records)
+      const ninInfo = tx.nin ? `<div class="tx-extra">NIN: ${String(tx.nin)}</div>` : '';
+      const actionInfo = tx.action ? `<div class="tx-extra">Action: ${tx.action}</div>` : '';
 
       return `
         <div class="history-item">
           <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
-          <small>${when}</small>
+          <small class="tx-meta">${when}</small>
+          ${ninInfo}
+          ${actionInfo}
         </div>
       `;
     }).join('');
@@ -293,7 +420,7 @@ async function loadHistory() {
 // initial balance load
 updateBalance();
 
-// VERIFY function used by manual button and auto-on-enter/focus
+/* ========== VERIFY function used by manual button and auto-on-enter/focus ========== */
 async function runVerify(reference) {
   if (!userId || !reference) return { ok: false, message: "No reference or user." };
 
@@ -318,21 +445,47 @@ async function runVerify(reference) {
       localStorage.removeItem("ref");
       updateBalance();
       if (document.getElementById('history').style.display === 'block') loadHistory();
+
+      // show modern verify notification (custom)
+      showVerifyNotification({
+        title: 'Payment verified',
+        desc: 'Your payment was verified and your balance updated.',
+        type: 'success',
+        timeout: 5000,
+        actions: [{ label: 'View history', action: 'view-history', primary: true }]
+      });
+
       return { ok: true, data };
     } else {
       // not successful yet
+      // show friendly non-blocking notification for pending
+      showVerifyNotification({
+        title: 'Verification pending',
+        desc: (data.error || 'Payment not verified yet. Try again after a while.'),
+        type: 'error',
+        timeout: 4500,
+        actions: [{ label: 'OK', action: 'close' }]
+      });
       return { ok: false, data };
     }
   } catch (err) {
     console.error('verify error', err);
     verifyBtn.disabled = false;
     verifyBtn.innerText = prevText;
+
+    showVerifyNotification({
+      title: 'Verification failed',
+      desc: 'Could not reach verification service. Check connection or try later.',
+      type: 'error',
+      timeout: 5000,
+      actions: [{ label: 'OK', action: 'close' }]
+    });
+
     return { ok: false, error: err };
   }
 }
 
-// Auto-verify ONCE when entering dashboard or returning to it (focus).
-// It will not poll repeatedly; only attempts a single verify if a reference exists.
+/* ========== Auto-verify ONCE when entering dashboard or returning to it (focus). ========== */
 async function tryAutoVerifyOnce() {
   if (!userId) return;
   const ref = localStorage.getItem('ref');
@@ -340,9 +493,9 @@ async function tryAutoVerifyOnce() {
   try {
     const result = await runVerify(ref);
     if (result.ok) {
-      try { alert("Payment verified automatically — balance updated."); } catch (e) {}
+      // notification already shown in runVerify
+      console.log('Auto-verify success');
     } else {
-      // leave ref for manual verify; no repeated auto polling
       console.log('Auto-verify attempted; not yet verified.', result);
     }
   } catch (e) {
@@ -360,7 +513,7 @@ window.addEventListener('focus', () => {
   tryAutoVerifyOnce();
 });
 
-// History toggle logic (collapsed drawer)
+/* ========== History toggle logic (collapsed drawer) ========== */
 const historyToggleBtn = document.getElementById('historyToggleBtn');
 historyToggleBtn.addEventListener('click', async () => {
   const historyDiv = document.getElementById('history');
@@ -380,7 +533,7 @@ historyToggleBtn.addEventListener('click', async () => {
   }
 });
 
-// Modal logic (unchanged)
+/* ========== Modal logic (unchanged) ========== */
 const fundModal = document.getElementById("fundModal");
 document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
 document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
@@ -405,19 +558,19 @@ document.getElementById("payNowBtn").onclick = async () => {
   }
 };
 
-// Manual Verify Payment
+/* ========== Manual Verify Payment (uses runVerify which now shows modern notification) ========== */
 document.getElementById("verifyBtn").onclick = async () => {
   if (!userId) return alert("Please log in to verify payments.");
   const ref = localStorage.getItem("ref");
   if (!ref) return alert("No pending transaction to verify.");
   const result = await runVerify(ref);
   if (result.ok) {
-    alert("Payment verified successfully! Balance updated.");
+    // runVerify already showed modern success notification
     localStorage.removeItem("ref");
     updateBalance();
     if (document.getElementById('history').style.display === 'block') loadHistory();
   } else {
-    alert("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."));
+    // runVerify already showed notification explaining pending or error
   }
 };
 
