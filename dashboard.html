@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -84,139 +83,97 @@
       font-size: 0.9rem;
     }
     a { color: #0ea5e9; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a:hover { text-decoration: underline; }/* History styling - preserve margins of items */
+.history {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 12px;
+  text-align: left;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  display: none;
+}
+.history-item {
+  padding: 6px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.history-item:last-child { border-bottom: none; }
+.history-toggle {
+  display: inline-block;
+  margin-bottom: 8px;
+  background: transparent;
+  color: #0ea5e9;
+  border: 1px solid #0ea5e9;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
 
-    /* History styling - preserve margins of items */
-    .history {
-      background: #f8fafc;
-      border-radius: 10px;
-      padding: 10px;
-      margin-top: 12px;
-      text-align: left;
-      max-height: 200px;
-      overflow-y: auto;
-      font-size: 0.9rem;
-      display: none;
-    }
-    .history-item {
-      padding: 6px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .history-item:last-child { border-bottom: none; }
-    .history-toggle {
-      display: inline-block;
-      margin-bottom: 8px;
-      background: transparent;
-      color: #0ea5e9;
-      border: 1px solid #0ea5e9;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
+/* Status colors */
+.status-success { color: #10b981; font-weight: 600; }
+.status-pending { color: #ef4444; font-weight: 700; }
 
-    /* Status colors */
-    .status-success { color: #10b981; font-weight: 600; }
-    .status-pending { color: #ef4444; font-weight: 700; }
+button[disabled] { opacity: 0.6; cursor: not-allowed; }
 
-    button[disabled] { opacity: 0.6; cursor: not-allowed; }
+/* === Toast styles (minimal modern) === */
+#toast-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.toast {
+  min-width: 220px;
+  max-width: 360px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.12);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.95rem;
+  pointer-events: auto;
+  border-left: 4px solid transparent;
+  transform-origin: 100% 100%;
+  animation: toast-in 260ms ease-out;
+}
+.toast .icon { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 18px; }
+.toast.info { border-left-color: #0ea5e9; }
+.toast.success { border-left-color: #10b981; }
+.toast.error { border-left-color: #ef4444; }
+.toast.info .icon { background: rgba(14,165,233,0.08); color: #0369a1; }
+.toast.success .icon { background: rgba(16,185,129,0.08); color: #065f46; }
+.toast.error .icon { background: rgba(239,68,68,0.08); color: #7f1d1d; }
+.toast .content { flex: 1; text-align: left; }
+.toast .close-btn { background: transparent; border: none; cursor: pointer; font-size: 14px; opacity: 0.7; padding: 4px; }
+.toast .close-btn:hover { opacity: 1; }
 
-    /* === Toast styles (modern) === */
-    #toast-container {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      z-index: 2000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-end;
-      pointer-events: none;
-    }
-    .toast {
-      min-width: 220px;
-      max-width: 360px;
-      background: #ffffff;
-      color: #0f172a;
-      padding: 12px 14px;
-      border-radius: 10px;
-      box-shadow: 0 6px 18px rgba(2,6,23,0.2);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      font-size: 0.95rem;
-      pointer-events: auto;
-      border-left: 4px solid transparent;
-      transform-origin: 100% 100%;
-      animation: toast-in 300ms ease-out;
-    }
-    .toast .icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      font-size: 18px;
-    }
-    .toast.info { border-left-color: #0ea5e9; }
-    .toast.success { border-left-color: #10b981; }
-    .toast.error { border-left-color: #ef4444; }
-    .toast.info .icon { background: rgba(14,165,233,0.08); color: #0369a1; }
-    .toast.success .icon { background: rgba(16,185,129,0.08); color: #065f46; }
-    .toast.error .icon { background: rgba(239,68,68,0.08); color: #7f1d1d; }
-    .toast .content { flex: 1; text-align: left; }
-    .toast .close-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      opacity: 0.7;
-      padding: 4px;
-    }
-    .toast .close-btn:hover { opacity: 1; }
+@keyframes toast-in { from { transform: translateY(10px) scale(.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes toast-out { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(10px) scale(.98); opacity: 0; } }
 
-    @keyframes toast-in {
-      from { transform: translateY(10px) scale(.98); opacity: 0; }
-      to { transform: translateY(0) scale(1); opacity: 1; }
-    }
-    @keyframes toast-out {
-      from { transform: translateY(0) scale(1); opacity: 1; }
-      to { transform: translateY(10px) scale(.98); opacity: 0; }
-    }
   </style>
 </head>
-<body>
-
-<header>9jame Dashboard</header>
-
-<div class="container">
+<body><header>9jame Dashboard</header><div class="container">
   <h2 id="welcomeText">Welcome, Guest</h2>
-  <p id="userIdText">User ID: -</p>
-
-  <div class="balance-box">
+  <p id="userIdText">User ID: -</p>  <div class="balance-box">
     <p>Available Balance:</p>
     <p class="balance-amount">₦<span id="balance">0</span></p>
-  </div>
+  </div><button id="addFundBtn">Add Fund</button> <button id="verifyBtn" class="green-btn">Verify Payment</button>
 
-  <button id="addFundBtn">Add Fund</button>
-  <button id="verifyBtn" class="green-btn">Verify Payment</button>
-
-  <hr style="margin:20px 0;">
-
-  <h3 style="margin-bottom:6px;">Transaction History</h3>
+  <hr style="margin:20px 0;">  <h3 style="margin-bottom:6px;">Transaction History</h3>
   <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
-  <div id="history" class="history" aria-hidden="true">Loading...</div>
-
-  <hr style="margin:20px 0;">
-
-  <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
-  <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
-
-  <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
-</div>
-
-<!-- Add Fund Modal -->
-<div id="fundModal">
+  <div id="history" class="history" aria-hidden="true">Loading...</div>  <hr style="margin:20px 0;">  <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
+  <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>  <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
+</div><!-- Add Fund Modal --><div id="fundModal">
   <div class="modal-content">
     <h3>Add Fund</h3>
     <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
@@ -225,47 +182,17 @@
       <button id="cancelBtn" class="gray-btn">Cancel</button>
     </div>
   </div>
-</div>
-
-<footer>
+</div><footer>
   <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
   <p>Design by <strong>Atech ICT Solution</strong></p>
-</footer>
-
-<!-- Toast container -->
-<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-<script>
+</footer><!-- Toast container --><div id="toast-container" aria-live="polite" aria-atomic="true"></div><script>
 const baseURL = "https://9jame.netlify.app/.netlify/functions";
 const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 
 let userId = null;
 let username = null;
 
-try {
-  const stored = localStorage.getItem('user');
-  if (stored) {
-    const obj = JSON.parse(stored);
-    if (obj && obj.userId) { userId = obj.userId; username = obj.username || obj.email || "User"; }
-  }
-} catch {}
-
-if (!userId) {
-  const uid = localStorage.getItem('userId');
-  const uname = localStorage.getItem('username');
-  if (uid) userId = uid;
-  if (uname) username = uname;
-}
-
-if (!userId) {
-  showToast("Please log in to access the dashboard.", "error");
-  setTimeout(() => { window.location.href = "index.html"; }, 1100);
-} else {
-  document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
-  document.getElementById("userIdText").innerText = `User ID: ${userId}`;
-}
-
-/* ===== Modern toast utility ===== */
+/* ===== Modern toast utility (used to replace alert) ===== */
 function showToast(message, type = "info", duration = 3500) {
   try {
     const container = document.getElementById('toast-container');
@@ -293,29 +220,43 @@ function showToast(message, type = "info", duration = 3500) {
 
     container.appendChild(toast);
 
-    const timeoutId = setTimeout(() => {
-      removeToast(toast);
-    }, duration);
+    const timeoutId = setTimeout(() => { removeToast(toast); }, duration);
 
-    // remove on click anywhere on toast
-    toast.addEventListener('click', (e) => {
-      if (e.target !== closeBtn) removeToast(toast);
-      clearTimeout(timeoutId);
-    });
+    toast.addEventListener('click', (e) => { if (e.target !== closeBtn) removeToast(toast); clearTimeout(timeoutId); });
 
     function removeToast(el) {
       el.style.animation = 'toast-out 200ms ease-in';
       el.style.opacity = '0';
-      setTimeout(() => {
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-      }, 220);
+      setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 220);
     }
-  } catch (err) {
-    console.error('toast error', err);
-  }
+  } catch (err) { console.error('toast error', err); }
 }
 
-/* Balance */
+try {
+  const stored = localStorage.getItem('user');
+  if (stored) {
+    const obj = JSON.parse(stored);
+    if (obj && obj.userId) { userId = obj.userId; username = obj.username || obj.email || "User"; }
+  }
+} catch {}
+
+if (!userId) {
+  const uid = localStorage.getItem('userId');
+  const uname = localStorage.getItem('username');
+  if (uid) userId = uid;
+  if (uname) username = uname;
+}
+
+if (!userId) {
+  showToast("Please log in to access the dashboard.", "error");
+  // keep redirect but allow toast to show briefly
+  setTimeout(() => { window.location.href = "index.html"; }, 700);
+} else {
+  document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
+  document.getElementById("userIdText").innerText = `User ID: ${userId}`;
+}
+
+// Balance
 async function updateBalance() {
   if (!userId) return;
   try {
@@ -325,7 +266,7 @@ async function updateBalance() {
   } catch { document.getElementById("balance").innerText = "0"; }
 }
 
-/* History */
+// History
 async function loadHistory() {
   const historyDiv = document.getElementById("history");
   if (!userId) { historyDiv.innerHTML = "No user."; return; }
@@ -356,7 +297,7 @@ async function loadHistory() {
 
 updateBalance();
 
-/* Verify */
+// Verify
 async function runVerify(reference) {
   if (!userId || !reference) return { ok: false, message: "No reference or user." };
   const verifyBtn = document.getElementById('verifyBtn');
@@ -386,7 +327,7 @@ async function runVerify(reference) {
   }
 }
 
-/* Auto-verify once */
+// Auto-verify once
 async function tryAutoVerifyOnce() {
   if (!userId) return;
   const ref = localStorage.getItem('ref');
@@ -406,7 +347,7 @@ window.addEventListener('focus', () => {
   tryAutoVerifyOnce();
 });
 
-/* History toggle */
+// History toggle
 const historyToggleBtn = document.getElementById('historyToggleBtn');
 historyToggleBtn.addEventListener('click', async () => {
   const historyDiv = document.getElementById('history');
@@ -425,21 +366,15 @@ historyToggleBtn.addEventListener('click', async () => {
   }
 });
 
-/* Modal */
+// Modal
 const fundModal = document.getElementById("fundModal");
 document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
 document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
 
 document.getElementById("payNowBtn").onclick = async () => {
-  if (!userId) {
-    showToast("Please log in to add funds.", "error");
-    return;
-  }
+  if (!userId) { showToast("Please log in to add funds.", "error"); return; }
   const amount = parseInt(document.getElementById("fundAmount").value);
-  if (!amount || amount < 50) {
-    showToast("Please enter at least ₦50", "error");
-    return;
-  }
+  if (!amount || amount < 50) { showToast("Please enter at least ₦50", "error"); return; }
   fundModal.style.display = "none";
   const res = await fetch(`${baseURL}/create-transaction`, {
     method: "POST",
@@ -450,32 +385,25 @@ document.getElementById("payNowBtn").onclick = async () => {
   if (data.checkoutUrl) {
     localStorage.setItem("ref", data.reference);
     window.open(data.checkoutUrl, "_blank");
-    showToast("Payment page opened. After payment, return to dashboard and click Verify if needed.", "info");
+    showToast("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or click Verify.", "info");
   } else showToast("Error: " + (data.error || JSON.stringify(data)), "error");
 };
 
-/* Manual verify */
+// Manual verify
 document.getElementById("verifyBtn").onclick = async () => {
-  if (!userId) {
-    showToast("Please log in to verify payments.", "error");
-    return;
-  }
+  if (!userId) { showToast("Please log in to verify payments.", "error"); return; }
   const ref = localStorage.getItem("ref");
-  if (!ref) {
-    showToast("No pending transaction to verify.", "info");
-    return;
-  }
+  if (!ref) { showToast("No pending transaction to verify.", "info"); return; }
   const result = await runVerify(ref);
   if (result.ok) {
     showToast("Payment verified successfully! Balance updated.", "success");
     localStorage.removeItem("ref");
     updateBalance();
     if (document.getElementById('history').style.display === 'block') loadHistory();
-  } else showToast("Verification attempt: " + (result.data?.error || "Not yet verified. Return after payment or try again."), "info");
+  } else showToast("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."), "info");
 };
 
-/* Get NIN button */
+// Get NIN button
 document.getElementById("getNINBtn").onclick = () => { window.location.href = "ni.html"; };
-</script>
-</body>
+</script></body>
 </html>
