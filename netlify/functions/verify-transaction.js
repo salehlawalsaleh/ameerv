@@ -1,75 +1,78 @@
 // netlify/functions/verify-transaction.js
-const fetch = require('node-fetch');
-const { rdb } = require('./lib/firebase-admin');
-
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-
-exports.handler = async function(event) {
+export async function handler(event) {
   try {
-    if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
-    const reference = event.queryStringParameters && event.queryStringParameters.reference;
-    if (!reference) return { statusCode: 400, body: JSON.stringify({ message: 'Missing reference' }) };
+    const { reference, userId } = JSON.parse(event.body);
 
-    // verify with Paystack
-    const resp = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`, Accept: 'application/json' }
-    });
-    const data = await resp.json();
-
-    if (!data || data.status !== true) {
-      return { statusCode: 400, body: JSON.stringify({ status: 'failed', message: 'Paystack verify failed', data }) };
+    if (!reference || !userId) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing reference or userId" }),
+      };
     }
 
-    const txn = data.data;
-    if (txn.status !== 'success') {
-      return { statusCode: 400, body: JSON.stringify({ status: 'failed', message: 'Transaction not successful', txn }) };
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+    const FIREBASE_DB_URL = process.env.FIREBASE_DATABASE_URL;
+
+    // 1️⃣ Verify payment with Paystack
+    const verifyRes = await fetch(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        },
+      }
+    );
+
+    const verifyData = await verifyRes.json();
+    if (!verifyData.status || verifyData.data.status !== "success") {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Transaction not verified" }),
+      };
     }
 
-    const referenceFromPaystack = txn.reference;
-    const amountKobo = txn.amount; // kobo
-    const metadata = txn.metadata || {};
-    // fetch our pending transaction record
-    const txSnap = await rdb.ref(`transactions/${referenceFromPaystack}`).once('value');
-    const existing = txSnap.val();
+    const amount = verifyData.data.amount / 100;
 
-    // Idempotency: if already success, return success
-    if (existing && existing.status === 'success') {
-      return { statusCode: 200, body: JSON.stringify({ status: 'success', message: 'Already processed' }) };
-    }
+    // 2️⃣ Get current balance from Firebase
+    const userRes = await fetch(`${FIREBASE_DB_URL}/users/${userId}.json`);
+    const userData = await userRes.json();
+    const oldBalance = userData?.balance || 0;
+    const newBalance = oldBalance + amount;
 
-    // determine userId: prefer our existing record, else try metadata.userId
-    const userId = (existing && existing.userId) || metadata.userId || (txn.customer && txn.customer.email) || null;
-    if (!userId) {
-      // still update global transaction record and return error
-      await rdb.ref(`transactions/${referenceFromPaystack}`).update({ status: 'success', paystack: txn, updatedAt: Date.now() });
-      return { statusCode: 200, body: JSON.stringify({ status: 'success', message: 'Verified but userId missing — manual reconcile needed' }) };
-    }
-
-    // update transaction globally and under user (mark success)
-    await rdb.ref(`transactions/${referenceFromPaystack}`).update({ status: 'success', paystack: txn, updatedAt: Date.now() });
-
-    // update user's transaction node: find entry with that reference (simple approach: push new success record)
-    const userTxRef = rdb.ref(`users/${userId}/transactions`).push();
-    await userTxRef.set({
-      reference: referenceFromPaystack,
-      amount: amountKobo,
-      type: 'credit',
-      description: 'Top-up via Paystack',
-      status: 'success',
-      timestamp: Date.now()
+    // 3️⃣ Update user balance
+    await fetch(`${FIREBASE_DB_URL}/users/${userId}.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ balance: newBalance }),
     });
 
-    // increment user balance atomically
-    const balRef = rdb.ref(`users/${userId}/balance`);
-    await balRef.transaction(current => {
-      const cur = (current || 0);
-      return cur + Number(amountKobo);
+    // 4️⃣ Save transaction record
+    await fetch(`${FIREBASE_DB_URL}/transactions/${userId}.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reference,
+        amount,
+        status: "success",
+        verifiedAt: new Date().toISOString(),
+      }),
     });
 
-    return { statusCode: 200, body: JSON.stringify({ status: 'success', message: 'Verified and balance updated' }) };
+    // 5️⃣ Done
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        status: "ok",
+        balance: newBalance,
+        message: "Payment verified successfully",
+      }),
+    };
   } catch (err) {
     console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ status: 'error', message: err.message }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
   }
-};
+}
