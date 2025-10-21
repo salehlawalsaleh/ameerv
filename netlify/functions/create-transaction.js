@@ -22,7 +22,8 @@ export async function handler(event) {
       body: JSON.stringify({
         amount: amount * 100,
         email: `${userId}@9jame.net`,
-        callback_url: `https://9jame.netlify.app/success.html?uid=${userId}`,
+        // callback now points to dashboard.html (make sure file exists and is deployed)
+        callback_url: `https://9jame.netlify.app/dashboard.html?uid=${encodeURIComponent(userId)}`,
       }),
     });
 
@@ -32,7 +33,7 @@ export async function handler(event) {
     }
 
     // 2️⃣ Save pending transaction to Firebase via REST
-    await fetch(`${FIREBASE_DB_URL}/transactions/${userId}.json`, {
+    await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
