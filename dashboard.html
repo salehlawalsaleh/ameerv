@@ -1,360 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dashboard — AmeerTech</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
-<style>
-  :root{--bg:#f4f6f8;--card:#fff;--ink:#0f172a;--muted:#64748b;--brand:#0ea5a0;--brand-2:#007f5f;--danger:#ef4444}
-  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); margin:0;padding:24px;color:var(--ink)}
-  .wrap{max-width:980px;margin:40px auto}
-  .card{background:var(--card);border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(2,8,23,.08)}
-  .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-  .col{flex:1;min-width:240px}
-  h1{margin:0 0 8px;font-size:20px;font-weight:800}
-  .muted{color:var(--muted)}
-  .balance{font-size:28px;font-weight:900;margin-top:8px}
-  button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:800}
-  .btn-primary{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:white}
-  .btn-ghost{background:#eef2f2;color:var(--ink)}
-  .box{background:#fbfdfe;border-radius:12px;padding:14px}
-  .history-list{max-height:280px;overflow:auto;margin-top:10px;border-radius:8px;padding:8px;background:#fff;border:1px solid #eef2f2}
-  .hist-row{display:flex;justify-content:space-between;padding:8px;border-bottom:1px dashed #f1f5f9}
-  .small{font-size:13px;color:var(--muted)}
-  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-  .toggle{display:flex;gap:8px;align-items:center}
-  a.contact{color:var(--brand-2);text-decoration:none;font-weight:700}
-  .notice{margin-top:10px;font-size:13px;color:#0f172a}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9jame Dashboard</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      text-align: center;
+    }
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 1rem 0;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .container {
+      max-width: 400px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      padding: 20px;
+    }
+    .balance-box {
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .balance-amount {
+      font-size: 1.8rem;
+      color: #0ea5e9;
+    }
+    button {
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0284c7;
+    }
+    .green-btn {
+      background: #10b981;
+    }
+    .green-btn:hover {
+      background: #059669;
+    }
+    .gray-btn {
+      background: #64748b;
+    }
+    .gray-btn:hover {
+      background: #475569;
+    }
+    #fundModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      width: 90%;
+      max-width: 320px;
+    }
+    .modal-content input {
+      width: 80%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <div class="topbar">
+
+  <header>9jame Dashboard</header>
+
+  <div class="container">
+    <h2 id="welcomeText">Welcome, Guest</h2>
+    <p id="userIdText">User ID: -</p>
+
+    <div class="balance-box">
+      <p>Available Balance:</p>
+      <p class="balance-amount">₦<span id="balance">0</span></p>
+    </div>
+
+    <button id="addFundBtn">Add Fund</button>
+    <button id="verifyBtn" class="green-btn">Verify Payment</button>
+
+    <hr style="margin:20px 0;">
+
+    <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
+    <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
+  </div>
+
+  <!-- Add Fund Modal -->
+  <div id="fundModal">
+    <div class="modal-content">
+      <h3>Add Fund</h3>
+      <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
       <div>
-        <h1 id="welcome">Welcome</h1>
-        <div class="small" id="userId">User ID: —</div>
+        <button id="payNowBtn">Pay Now</button>
+        <button id="cancelBtn" class="gray-btn">Cancel</button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="logoutBtn" class="btn-ghost">Logout</button>
-      </div>
-    </div>
-
-    <div class="row" style="margin-bottom:12px">
-      <div class="col box">
-        <div class="small">Available balance</div>
-        <div class="balance" id="balance">₦0</div>
-        <div style="margin-top:12px;display:flex;gap:8px">
-          <button id="addFundBtn" class="btn-primary">Add Fund</button>
-          <button id="refreshBtn" class="btn-ghost">Refresh</button>
-        </div>
-        <div class="notice">Click <b>Add Fund</b> to top up your wallet with Paystack. After successful payment, balance updates automatically.</div>
-<!-- Add Fund Modal -->
-<div id="addFundModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
-  <div style="background:#fff; border-radius:12px; padding:18px; width:90%; max-width:420px; box-shadow:0 10px 30px rgba(2,8,23,0.12);">
-    <h3 style="margin:0 0 8px; font-size:18px;">Add Funds</h3>
-    <p class="small" style="margin:0 0 12px;">Choose an amount or enter a custom value (NGN)</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-      <button class="preset-amt btn-ghost" data-amt="500">₦500</button>
-      <button class="preset-amt btn-ghost" data-amt="1000">₦1,000</button>
-      <button class="preset-amt btn-ghost" data-amt="2000">₦2,000</button>
-      <button class="preset-amt btn-ghost" data-amt="5000">₦5,000</button>
-    </div>
-    <input id="customAmount" type="number" min="50" placeholder="Custom amount (min ₦50)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0; margin-bottom:12px;">
-    <div style="display:flex;gap:8px">
-      <button id="payNowBtn" class="btn-primary" style="flex:1">Pay Now</button>
-      <button id="cancelPayBtn" class="btn-ghost" style="flex:1">Cancel</button>
-    </div>
-    <div id="modalError" class="small" style="color:#ef4444; margin-top:10px; display:none;"></div>
-  </div>
-</div>
-
-      </div>
-
-      <div class="col box">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div class="small">History</div>
-            <div style="font-weight:800">Transactions</div>
-          </div>
-          <div class="toggle">
-            <label class="small" for="showHistoryToggle">Show</label>
-            <input id="showHistoryToggle" type="checkbox" checked>
-          </div>
-        </div>
-
-        <div id="historyWrap" class="history-list"></div>
-        <div style="margin-top:8px"><a href="ni.html" class="contact" target="_blank">Get NIN Plastic Now</a></div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px" class="small">
-      Forgot password / support: <a href="https://wa.me/2348145415083" target="_blank">wa.me/08145415083</a>
     </div>
   </div>
-</div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getDatabase, ref, onValue, push, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<script>
+const baseURL = "https://9jame.netlify.app/.netlify/functions";
+const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 
-  // SAME firebase web config used in your other pages (keeps things consistent)
-  const firebaseConfig = {
-    apiKey: "AIzaSyDc0bIipHU7N73mju33dNwSWmH3IeIYkog",
-    authDomain: "ameernin-ba310.firebaseapp.com",
-    databaseURL: "https://ameernin-ba310-default-rtdb.firebaseio.com",
-    projectId: "ameernin-ba310",
-    storageBucket: "ameernin-ba310.appspot.com",
-    messagingSenderId: "522206845073",
-    appId: "1:522206845073:web:3c85714bd7eda6c1048730",
-  };
+// Get user from localStorage (for demo)
+let userId = localStorage.getItem("userId") || "demoUser";
+let username = localStorage.getItem("username") || "Demo User";
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
+// Display info
+document.getElementById("welcomeText").innerText = `Welcome, ${username}`;
+document.getElementById("userIdText").innerText = `User ID: ${userId}`;
 
-  // UI refs
-  const welcomeEl = document.getElementById('welcome');
-  const userIdEl = document.getElementById('userId');
-  const balanceEl = document.getElementById('balance');
-  const historyWrap = document.getElementById('historyWrap');
-  const showHistoryToggle = document.getElementById('showHistoryToggle');
-  const addFundBtn = document.getElementById('addFundBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  let uid = null;
-  let userEmail = null;
-
-  function formatCurrencyKobo(kobo){
-    const ngn = Number(kobo || 0) / 100;
-    return '₦' + ngn.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
+async function updateBalance() {
+  try {
+    const res = await fetch(`${FIREBASE_DB_URL}/users/${userId}.json`);
+    const data = await res.json();
+    document.getElementById("balance").innerText = data?.balance || 0;
+  } catch {
+    document.getElementById("balance").innerText = "0";
   }
-  function formatSimpleDate(ts){
-    const d = new Date(ts);
-    return d.toLocaleString();
+}
+updateBalance();
+
+// Modal logic
+const fundModal = document.getElementById("fundModal");
+document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
+document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
+
+document.getElementById("payNowBtn").onclick = async () => {
+  const amount = parseInt(document.getElementById("fundAmount").value);
+  if (!amount || amount < 50) return alert("Please enter at least ₦50");
+  fundModal.style.display = "none";
+  const res = await fetch(`${baseURL}/create-transaction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, amount })
+  });
+  const data = await res.json();
+  if (data.checkoutUrl) {
+    localStorage.setItem("ref", data.reference);
+    window.open(data.checkoutUrl, "_blank");
+    alert("Payment page opened. After payment, click Verify.");
+  } else {
+    alert("Error: " + data.error);
   }
+};
 
-  function renderHistoryItem(item){
-    const div = document.createElement('div');
-    div.className = 'hist-row';
-    div.innerHTML = `<div>
-      <div style="font-weight:700">${item.description || item.type || 'Payment'}</div>
-      <div class="small">${item.note || ''}</div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-weight:800">${item.type === 'credit' ? '+' : (item.type === 'demo' ? '' : '-')}${formatCurrencyKobo(item.amount || 0)}</div>
-      <div class="small">${item.status || ''} • ${formatSimpleDate(item.timestamp || Date.now())}</div>
-    </div>`;
-    return div;
+// Verify Payment
+document.getElementById("verifyBtn").onclick = async () => {
+  const ref = localStorage.getItem("ref");
+  if (!ref) return alert("No pending transaction to verify.");
+  const res = await fetch(`${baseURL}/verify-transaction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reference: ref, userId })
+  });
+  const data = await res.json();
+  if (data.status === "ok") {
+    alert("Payment verified successfully! Balance updated.");
+    localStorage.removeItem("ref");
+    updateBalance();
+  } else {
+    alert("Verification failed: " + data.error);
   }
+};
 
-  // Auth guard & init
-  onAuthStateChanged(auth, (user) => {
-    if(!user){ window.location.href = 'index.html'; return; }
-    uid = user.uid;
-    userEmail = user.email || '';
-    welcomeEl.textContent = `Welcome, ${user.displayName || user.email || 'User'}`;
-    userIdEl.textContent = `User ID: ${uid}`;
-
-    // listen to balance
-    const balRef = ref(db, `users/${uid}/balance`);
-    onValue(balRef, (snap)=> {
-      const val = snap.val() || 0;
-      balanceEl.textContent = formatCurrencyKobo(val);
-    });
-
-    // listen to transactions list
-    const txRef = ref(db, `users/${uid}/transactions`);
-    onValue(txRef, (snap)=>{
-      const data = snap.val() || {};
-      // create array sorted by timestamp desc
-      const arr = Object.keys(data).map(k => ({ id:k, ...data[k] }))
-                   .sort((a,b)=> (b.timestamp||0) - (a.timestamp||0));
-      renderHistory(arr);
-    });
-  });
-
-  function renderHistory(list){
-    historyWrap.innerHTML = '';
-    if(!showHistoryToggle.checked){ historyWrap.style.display = 'none'; return; }
-    historyWrap.style.display = 'block';
-    if(list.length === 0){
-      historyWrap.innerHTML = '<div class="small" style="padding:8px">No transactions yet.</div>'; return;
-    }
-    list.forEach(item => historyWrap.appendChild(renderHistoryItem(item)));
-  }
-
-  showHistoryToggle.addEventListener('change', ()=>{
-    // toggle visibility — real-time listener will call renderHistory
-    if(!showHistoryToggle.checked) historyWrap.style.display = 'none';
-    else historyWrap.style.display = 'block';
-  });
-
-  refreshBtn.addEventListener('click', async ()=>{
-    if(!uid) return;
-    // manual quick refresh: read balance and last 10 transactions
-    try{
-      const dbRef = ref(db);
-      const snap = await get(child(dbRef, `users/${uid}`));
-      const userObj = snap.val() || {};
-      const bal = userObj.balance || 0;
-      balanceEl.textContent = formatCurrencyKobo(bal);
-      const txs = userObj.transactions ? Object.keys(userObj.transactions).map(k=>({id:k,...userObj.transactions[k]})).sort((a,b)=> (b.timestamp||0)-(a.timestamp||0)) : [];
-      renderHistory(txs);
-    }catch(e){ console.error(e); alert('Refresh failed'); }
-  });
-
-  logoutBtn.addEventListener('click', async ()=>{
-    await signOut(auth);
-    window.location.href = 'index.html';
-  });
-
-  // -----------------------
-  // Paystack flow: Add Fund
-  // -----------------------
-  // -----------------------
-  // Paystack flow: Add Fund (modal UI)
-  // -----------------------
-  async function loadPaystackScript(){
-    if(window.PaystackPop) return;
-    return new Promise((res, rej)=>{
-      const s = document.createElement('script');
-      s.src = 'https://js.paystack.co/v1/inline.js';
-      s.onload = res; s.onerror = rej;
-      document.body.appendChild(s);
-    });
-  }
-
-  // modal elements
-  const addFundModal = document.getElementById('addFundModal');
-  const payNowBtn = document.getElementById('payNowBtn');
-  const cancelPayBtn = document.getElementById('cancelPayBtn');
-  const customAmountInput = document.getElementById('customAmount');
-  const modalError = document.getElementById('modalError');
-
-  document.getElementById('addFundBtn').addEventListener('click', ()=> {
-    modalError.style.display = 'none';
-    customAmountInput.value = '';
-    addFundModal.style.display = 'flex';
-    window.scrollTo(0,0);
-  });
-
-  // preset amount buttons
-  document.querySelectorAll('.preset-amt').forEach(btn => {
-    btn.addEventListener('click', ()=> {
-      document.querySelectorAll('.preset-amt').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      customAmountInput.value = btn.getAttribute('data-amt');
-    });
-  });
-
-  cancelPayBtn.addEventListener('click', ()=> {
-    addFundModal.style.display = 'none';
-  });
-
-  payNowBtn.addEventListener('click', async ()=> {
-    modalError.style.display = 'none';
-    let amount = Number(customAmountInput.value);
-    if (!amount || amount < 50) {
-      modalError.textContent = 'Please enter an amount of at least ₦50';
-      modalError.style.display = 'block';
-      return;
-    }
-    try{
-      const createRes = await fetch('/.netlify/functions/create-transaction', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ userId: uid, amount }) // amount in NGN
-      });
-      const createData = await createRes.json();
-      if(createRes.status !== 200){ console.error(createData); modalError.textContent = (createData && createData.error) ? createData.error : 'Could not initiate payment'; modalError.style.display='block'; return; }
-      const { reference, checkoutUrl, authorization_url, publicKey, status, data } = createData;
-
-      // Try to get checkout URL in different fields
-      const url = createData.checkoutUrl || createData.authorization_url || (createData.data && createData.data.authorization_url) || createData.authorizationUrl;
-      // save reference for verify
-      if(reference) localStorage.setItem('pendingRef', reference);
-      if(url){
-        // open paystack in new tab
-        window.open(url, '_blank');
-        addFundModal.style.display = 'none';
-        alert('Payment page opened. After payment, click "Verify Payment" to confirm.');
-      } else {
-        modalError.textContent = 'Payment URL not returned.';
-        modalError.style.display = 'block';
-      }
-    }catch(err){
-      console.error(err);
-      modalError.textContent = err.message || 'Payment initiation failed';
-      modalError.style.display = 'block';
-    }
-  });
-
-  async function loadPaystackScript(){
-    if(window.PaystackPop) return;
-    return new Promise((res, rej)=>{
-      const s = document.createElement('script');
-      s.src = 'https://js.paystack.co/v1/inline.js';
-      s.onload = res; s.onerror = rej;
-      document.body.appendChild(s);
-    });
-  }
-
-  addFundBtn.addEventListener('click', async ()=>{
-    if(!uid) return alert('User not loaded');
-    let amount = prompt('Enter amount to add (NGN):', '500');
-    if(!amount) return;
-    amount = parseFloat(amount);
-    if(isNaN(amount) || amount <= 0) return alert('Invalid amount');
-
-    try{
-      // ask Netlify function to create transaction & return reference + publicKey
-      const createRes = await fetch('/.netlify/functions/create-transaction', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ userId: uid, amount }) // amount in NGN
-      });
-      const createData = await createRes.json();
-      if(createRes.status !== 200){ console.error(createData); return alert('Could not initiate payment'); }
-      const { reference, publicKey } = createData;
-
-      await loadPaystackScript();
-
-      const handler = window.PaystackPop.setup({
-        key: publicKey,
-        email: userEmail || '', 
-        amount: Math.round(amount * 100), // kobo
-        ref: reference,
-        onClose: function(){ alert('Payment window closed'); },
-        callback: async function(response){
-          // call verify endpoint
-          try{
-            const verifyRes = await fetch(`/.netlify/functions/verify-transaction?reference=${encodeURIComponent(response.reference)}`);
-            const verifyJson = await verifyRes.json();
-            if(verifyRes.status === 200 && verifyJson.status === 'success'){
-              alert('Payment verified and balance updated.');
-              // balance will update automatically via DB listener
-            } else {
-              console.warn('verify failed', verifyJson);
-              alert('Payment not verified: ' + (verifyJson.message || 'unknown'));
-            }
-          }catch(err){
-            console.error('Verify error', err);
-            alert('Verification failed: ' + (err.message || err));
-          }
-        }
-      });
-      handler.openIframe();
-    }catch(err){
-      console.error(err);
-      alert('Payment initiation failed: ' + (err.message || err));
-    }
-  });
-
-  // ensure graceful fallback if offline or not authenticated
+// Get NIN button
+document.getElementById("getNINBtn").onclick = () => {
+  window.location.href = "ni.html";
+};
 </script>
 </body>
 </html>
