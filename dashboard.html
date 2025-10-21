@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>9jame Dashboard</title>
+  <title>VerifyMe Dashboard</title>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -129,6 +129,25 @@
       border-radius: 8px;
       cursor: pointer;
     }
+
+    /* New status classes (kept minimal to avoid changing existing style) */
+    .status-success {
+      color: #10b981; /* green */
+      font-weight: 700;
+    }
+    .status-pending {
+      color: #ef4444; /* red */
+      font-weight: 700;
+    }
+    .status-other {
+      font-weight: 600;
+    }
+
+    /* small helper for disabled button look */
+    button[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -183,9 +202,6 @@ const baseURL = "https://9jame.netlify.app/.netlify/functions";
 const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 
 // --- Auth check: require login (no access to dashboard if not logged in) ---
-// Accept either:
-//  - localStorage 'user' JSON with { userId, username }
-//  - OR localStorage 'userId' and 'username' keys separately
 let userId = null;
 let username = null;
 
@@ -203,20 +219,16 @@ try {
 }
 
 if (!userId) {
-  // fallback to individual keys
   const uid = localStorage.getItem('userId');
   const uname = localStorage.getItem('username');
   if (uid) userId = uid;
   if (uname) username = uname;
 }
 
-// If still no user info -> redirect to login page (no access)
 if (!userId) {
-  // optional: show message then redirect
   alert("Please log in to access the dashboard.");
   window.location.href = "index.html";
 } else {
-  // show user info
   document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
   document.getElementById("userIdText").innerText = `User ID: ${userId}`;
 }
@@ -248,14 +260,48 @@ async function loadHistory() {
       historyDiv.innerHTML = "No transactions yet.";
       return;
     }
+    // transactions stored as object — convert to array and reverse chronological
     const txs = Object.values(data).reverse();
-    historyDiv.innerHTML = txs.map(tx => `
-      <div class="history-item">
-        <strong>₦${tx.amount}</strong> - ${String(tx.status || '').toUpperCase()}<br>
-        <small>${new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString()}</small>
-      </div>
-    `).join('');
+
+    // Filter: only show DEBIT transactions.
+    // Common database keys vary; this filter tries multiple possible keys.
+    const debitTxs = txs.filter(tx => {
+      try {
+        const type = (tx.type || tx.direction || tx.category || '').toString().toLowerCase();
+        const isDebitFlag = tx.isDebit === true || tx.is_debit === true;
+        const amountNegative = tx.amount !== undefined && !isNaN(Number(tx.amount)) && Number(tx.amount) < 0;
+        return type === 'debit' || isDebitFlag || amountNegative;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (!debitTxs || debitTxs.length === 0) {
+      historyDiv.innerHTML = "No debit transactions.";
+      return;
+    }
+
+    historyDiv.innerHTML = debitTxs.map(tx => {
+      const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
+      const statusLabel = statusRaw === 'success' || statusRaw === 'verified' ? 'SUCCESS'
+                        : statusRaw === 'pending' ? 'PENDING'
+                        : (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
+
+      const statusClass = statusRaw === 'success' || statusRaw === 'verified' ? 'status-success'
+                        : statusRaw === 'pending' ? 'status-pending'
+                        : 'status-other';
+
+      const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();
+      const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');
+      return `
+        <div class="history-item">
+          <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
+          <small>${when}</small>
+        </div>
+      `;
+    }).join('');
   } catch (err) {
+    console.error(err);
     historyDiv.innerHTML = "Failed to load history.";
   }
 }
@@ -263,11 +309,97 @@ async function loadHistory() {
 // initial balance load
 updateBalance();
 
+// AUTO-VERIFY logic:
+// - If localStorage has "ref", try to verify it automatically every 10 seconds.
+// - If verification succeeds, clear the ref, update balance and reload history (if open).
+let autoVerifyInterval = null;
+async function runVerify(reference) {
+  if (!userId || !reference) return { ok: false, message: "No reference or user." };
+
+  // provide UI feedback on manual verify button
+  const verifyBtn = document.getElementById('verifyBtn');
+  const prevText = verifyBtn.innerText;
+  verifyBtn.disabled = true;
+  verifyBtn.innerText = 'Verifying...';
+
+  try {
+    const res = await fetch(`${baseURL}/verify-transaction`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference, userId })
+    });
+    const data = await res.json();
+
+    // restore button
+    verifyBtn.disabled = false;
+    verifyBtn.innerText = prevText;
+
+    if (data.status === "ok") {
+      // success
+      localStorage.removeItem("ref");
+      updateBalance();
+      if (document.getElementById('history').style.display === 'block') loadHistory();
+
+      // stop auto-check if running
+      if (autoVerifyInterval) {
+        clearInterval(autoVerifyInterval);
+        autoVerifyInterval = null;
+      }
+
+      return { ok: true, data };
+    } else {
+      // not yet successful or error
+      return { ok: false, data };
+    }
+  } catch (err) {
+    console.error('verify error', err);
+    const verifyBtn = document.getElementById('verifyBtn');
+    verifyBtn.disabled = false;
+    verifyBtn.innerText = prevText;
+    return { ok: false, error: err };
+  }
+}
+
+function startAutoVerify() {
+  if (autoVerifyInterval) return;
+  // run immediately then every 10s
+  const attempt = async () => {
+    const ref = localStorage.getItem('ref');
+    if (!ref) {
+      if (autoVerifyInterval) {
+        clearInterval(autoVerifyInterval);
+        autoVerifyInterval = null;
+      }
+      return;
+    }
+    try {
+      const result = await runVerify(ref);
+      if (result.ok) {
+        // notify user that auto verification succeeded
+        try { alert("Payment verified successfully (automatic). Balance updated."); } catch(e) {}
+      } else {
+        // still pending or error: keep trying silently (logged to console)
+        console.log('Auto-verify attempt result:', result);
+      }
+    } catch (e) {
+      console.error('Auto verify failed', e);
+    }
+  };
+  // run one attempt now, then interval
+  attempt();
+  autoVerifyInterval = setInterval(attempt, 10000);
+}
+
+// attempt to start auto verify on load (if user had opened checkout in same session)
+startAutoVerify();
+
 // auto-refresh when tab regains focus (useful after Paystack payment)
 window.addEventListener('focus', () => {
   updateBalance();
   // if history is open, reload it
   if (document.getElementById('history').style.display === 'block') loadHistory();
+  // also try auto-verify when returning to tab
+  startAutoVerify();
 });
 
 // History toggle logic (collapsed drawer)
@@ -307,33 +439,30 @@ document.getElementById("payNowBtn").onclick = async () => {
   });
   const data = await res.json();
   if (data.checkoutUrl) {
+    // store reference locally so auto-verify can pick it up
     localStorage.setItem("ref", data.reference);
     window.open(data.checkoutUrl, "_blank");
-    alert("Payment page opened. After payment, click Verify.");
+    alert("Payment page opened. After payment, verification will run automatically, or you can click Verify.");
+    // start auto verify loop (in case it isn't running)
+    startAutoVerify();
   } else {
-    alert("Error: " + data.error);
+    alert("Error: " + (data.error || JSON.stringify(data)));
   }
 };
 
-// Verify Payment
+// Manual Verify Payment (calls same runVerify function used by auto-check)
 document.getElementById("verifyBtn").onclick = async () => {
   if (!userId) return alert("Please log in to verify payments.");
   const ref = localStorage.getItem("ref");
   if (!ref) return alert("No pending transaction to verify.");
-  const res = await fetch(`${baseURL}/verify-transaction`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reference: ref, userId })
-  });
-  const data = await res.json();
-  if (data.status === "ok") {
+  const result = await runVerify(ref);
+  if (result.ok) {
     alert("Payment verified successfully! Balance updated.");
     localStorage.removeItem("ref");
     updateBalance();
-    // reload history if open
     if (document.getElementById('history').style.display === 'block') loadHistory();
   } else {
-    alert("Verification failed: " + (data.error || JSON.stringify(data)));
+    alert("Verification attempt: " + (result.data?.error || "Not yet verified. Try again or wait a few seconds."));
   }
 };
 
