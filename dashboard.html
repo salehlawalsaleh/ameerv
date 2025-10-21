@@ -119,6 +119,70 @@
     .status-pending { color: #ef4444; font-weight: 700; }
 
     button[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+    /* === Toast styles (modern) === */
+    #toast-container {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .toast {
+      min-width: 220px;
+      max-width: 360px;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.2);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 0.95rem;
+      pointer-events: auto;
+      border-left: 4px solid transparent;
+      transform-origin: 100% 100%;
+      animation: toast-in 300ms ease-out;
+    }
+    .toast .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .toast.info { border-left-color: #0ea5e9; }
+    .toast.success { border-left-color: #10b981; }
+    .toast.error { border-left-color: #ef4444; }
+    .toast.info .icon { background: rgba(14,165,233,0.08); color: #0369a1; }
+    .toast.success .icon { background: rgba(16,185,129,0.08); color: #065f46; }
+    .toast.error .icon { background: rgba(239,68,68,0.08); color: #7f1d1d; }
+    .toast .content { flex: 1; text-align: left; }
+    .toast .close-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      opacity: 0.7;
+      padding: 4px;
+    }
+    .toast .close-btn:hover { opacity: 1; }
+
+    @keyframes toast-in {
+      from { transform: translateY(10px) scale(.98); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes toast-out {
+      from { transform: translateY(0) scale(1); opacity: 1; }
+      to { transform: translateY(10px) scale(.98); opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -168,6 +232,9 @@
   <p>Design by <strong>Atech ICT Solution</strong></p>
 </footer>
 
+<!-- Toast container -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
 <script>
 const baseURL = "https://9jame.netlify.app/.netlify/functions";
 const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
@@ -191,14 +258,64 @@ if (!userId) {
 }
 
 if (!userId) {
-  alert("Please log in to access the dashboard.");
-  window.location.href = "index.html";
+  showToast("Please log in to access the dashboard.", "error");
+  setTimeout(() => { window.location.href = "index.html"; }, 1100);
 } else {
   document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
   document.getElementById("userIdText").innerText = `User ID: ${userId}`;
 }
 
-// Balance
+/* ===== Modern toast utility ===== */
+function showToast(message, type = "info", duration = 3500) {
+  try {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icon = document.createElement('div');
+    icon.className = 'icon';
+    icon.innerText = type === 'success' ? '✓' : (type === 'error' ? '!' : 'i');
+
+    const content = document.createElement('div');
+    content.className = 'content';
+    content.innerText = message;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.setAttribute('aria-label', 'Close notification');
+    closeBtn.innerText = '×';
+    closeBtn.onclick = () => removeToast(toast);
+
+    toast.appendChild(icon);
+    toast.appendChild(content);
+    toast.appendChild(closeBtn);
+
+    container.appendChild(toast);
+
+    const timeoutId = setTimeout(() => {
+      removeToast(toast);
+    }, duration);
+
+    // remove on click anywhere on toast
+    toast.addEventListener('click', (e) => {
+      if (e.target !== closeBtn) removeToast(toast);
+      clearTimeout(timeoutId);
+    });
+
+    function removeToast(el) {
+      el.style.animation = 'toast-out 200ms ease-in';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      }, 220);
+    }
+  } catch (err) {
+    console.error('toast error', err);
+  }
+}
+
+/* Balance */
 async function updateBalance() {
   if (!userId) return;
   try {
@@ -208,7 +325,7 @@ async function updateBalance() {
   } catch { document.getElementById("balance").innerText = "0"; }
 }
 
-// History
+/* History */
 async function loadHistory() {
   const historyDiv = document.getElementById("history");
   if (!userId) { historyDiv.innerHTML = "No user."; return; }
@@ -239,7 +356,7 @@ async function loadHistory() {
 
 updateBalance();
 
-// Verify
+/* Verify */
 async function runVerify(reference) {
   if (!userId || !reference) return { ok: false, message: "No reference or user." };
   const verifyBtn = document.getElementById('verifyBtn');
@@ -269,14 +386,14 @@ async function runVerify(reference) {
   }
 }
 
-// Auto-verify once
+/* Auto-verify once */
 async function tryAutoVerifyOnce() {
   if (!userId) return;
   const ref = localStorage.getItem('ref');
   if (!ref) return;
   try {
     const result = await runVerify(ref);
-    if (result.ok) { try { alert("Payment verified automatically — balance updated."); } catch {} }
+    if (result.ok) { try { showToast("Payment verified automatically — balance updated.", "success"); } catch {} }
     else console.log('Auto-verify attempted; not yet verified.', result);
   } catch (e) { console.error('Auto-verify failure', e); }
 }
@@ -289,7 +406,7 @@ window.addEventListener('focus', () => {
   tryAutoVerifyOnce();
 });
 
-// History toggle
+/* History toggle */
 const historyToggleBtn = document.getElementById('historyToggleBtn');
 historyToggleBtn.addEventListener('click', async () => {
   const historyDiv = document.getElementById('history');
@@ -308,15 +425,21 @@ historyToggleBtn.addEventListener('click', async () => {
   }
 });
 
-// Modal
+/* Modal */
 const fundModal = document.getElementById("fundModal");
 document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
 document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
 
 document.getElementById("payNowBtn").onclick = async () => {
-  if (!userId) return alert("Please log in to add funds.");
+  if (!userId) {
+    showToast("Please log in to add funds.", "error");
+    return;
+  }
   const amount = parseInt(document.getElementById("fundAmount").value);
-  if (!amount || amount < 50) return alert("Please enter at least ₦50");
+  if (!amount || amount < 50) {
+    showToast("Please enter at least ₦50", "error");
+    return;
+  }
   fundModal.style.display = "none";
   const res = await fetch(`${baseURL}/create-transaction`, {
     method: "POST",
@@ -327,25 +450,31 @@ document.getElementById("payNowBtn").onclick = async () => {
   if (data.checkoutUrl) {
     localStorage.setItem("ref", data.reference);
     window.open(data.checkoutUrl, "_blank");
-    alert("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or click Verify.");
-  } else alert("Error: " + (data.error || JSON.stringify(data)));
+    showToast("Payment page opened. After payment, return to dashboard and click Verify if needed.", "info");
+  } else showToast("Error: " + (data.error || JSON.stringify(data)), "error");
 };
 
-// Manual verify
+/* Manual verify */
 document.getElementById("verifyBtn").onclick = async () => {
-  if (!userId) return alert("Please log in to verify payments.");
+  if (!userId) {
+    showToast("Please log in to verify payments.", "error");
+    return;
+  }
   const ref = localStorage.getItem("ref");
-  if (!ref) return alert("No pending transaction to verify.");
+  if (!ref) {
+    showToast("No pending transaction to verify.", "info");
+    return;
+  }
   const result = await runVerify(ref);
   if (result.ok) {
-    alert("Payment verified successfully! Balance updated.");
+    showToast("Payment verified successfully! Balance updated.", "success");
     localStorage.removeItem("ref");
     updateBalance();
     if (document.getElementById('history').style.display === 'block') loadHistory();
-  } else alert("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."));
+  } else showToast("Verification attempt: " + (result.data?.error || "Not yet verified. Return after payment or try again."), "info");
 };
 
-// Get NIN button
+/* Get NIN button */
 document.getElementById("getNINBtn").onclick = () => { window.location.href = "ni.html"; };
 </script>
 </body>
