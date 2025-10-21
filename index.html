@@ -1,88 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AmeerTech — Auth</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --bg: #f4f6f8; --card: #fff; --ink: #0f172a; --muted: #64748b; 
-    --brand: #0ea5a0; --brand-2: #007f5f; --danger:#ef4444;
-  }
-  body {
-    font-family: Inter, system-ui, sans-serif;
-    background: var(--bg);
-    margin: 0; padding: 0; display: grid; place-items: center;
-    min-height: 100vh; color: var(--ink);
-  }
-  .card {
-    background: var(--card); border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(2,8,23,0.08);
-    padding: 24px; max-width: 380px; width: 90%;
-  }
-  h2 { text-align: center; font-weight: 800; margin-bottom: 20px; }
-  label { display: block; font-weight: 700; margin-bottom: 4px; font-size: 13px; }
-  input {
-    width: 100%; padding: 10px; border: 1px solid #e2e8f0;
-    border-radius: 10px; margin-bottom: 12px;
-  }
-  input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px rgba(14,165,160,.15); }
-  button {
-    width: 100%; padding: 12px; border: none;
-    border-radius: 10px; background: linear-gradient(135deg, var(--brand-2), var(--brand));
-    color: #fff; font-weight: 800; cursor: pointer;
-  }
-  button:disabled { opacity: 0.6; cursor: not-allowed; }
-  .switch { text-align: center; margin-top: 10px; font-size: 14px; color: var(--muted); }
-  .switch span { color: var(--brand-2); cursor: pointer; font-weight: 700; }
-  .error { color: var(--danger); text-align: center; margin-bottom: 10px; font-weight: 700; }
-  footer { text-align: center; margin-top: 16px; font-size: 13px; color: var(--muted); }
-  a { color: var(--brand-2); text-decoration: none; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AmeerTech — Auth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#f4f6f8; --card:#fff; --ink:#0f172a; --muted:#64748b;
+      --brand:#0ea5a0; --brand-2:#007f5f; --danger:#ef4444;
+      --glass: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family: Inter, system-ui, sans-serif;
+      background: linear-gradient(180deg,#f8fafb 0%, #eef2f4 100%);
+      margin:0; padding:24px; display:flex; align-items:center; justify-content:center; min-height:100vh; color:var(--ink);
+    }
+    .card{
+      background:var(--card);
+      border-radius:16px;
+      box-shadow: 0 10px 30px rgba(2,8,23,0.08);
+      padding: 20px;
+      max-width: 420px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    h2 { text-align:center; font-weight:800; margin:6px 0 16px; font-size:20px; color:var(--ink) }
+    /* Toggle switch */
+    .toggle {
+      display:flex;
+      background: #eef2f4;
+      border-radius: 999px;
+      padding:4px;
+      gap:4px;
+      width: 240px;
+      margin: 0 auto 18px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .toggle button {
+      flex:1;
+      padding:8px 12px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      cursor:pointer;
+      font-weight:700;
+      color:var(--muted);
+      transition: all .18s ease;
+    }
+    .toggle button.active {
+      background: linear-gradient(135deg,var(--brand-2),var(--brand));
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(2,8,23,0.08);
+    }
+
+    label { display:block; font-weight:700; margin-bottom:6px; font-size:13px; color:var(--muted) }
+    input {
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #e6edf0;
+      margin-bottom:12px;
+      font-size:15px;
+      background: #fff;
+    }
+    input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px rgba(14,165,160,0.08) }
+    .row { display:grid; gap:8px; }
+    .actions { margin-top:6px; display:flex; gap:10px; align-items:center }
+    .btn {
+      flex:1;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      color:#fff;
+      font-weight:800;
+      background: linear-gradient(135deg,var(--brand-2),var(--brand));
+      cursor:pointer;
+    }
+    .btn.secondary {
+      background:transparent; color:var(--brand-2); border:1px solid rgba(6,95,79,0.08); font-weight:700;
+    }
+    .error { color:var(--danger); text-align:center; margin-bottom:8px; font-weight:700; min-height:18px }
+    .small { font-size:13px; color:var(--muted); text-align:center; margin-top:10px }
+    footer { text-align:center; margin-top:16px; font-size:13px; color:var(--muted) }
+    a { color:var(--brand-2); text-decoration:none }
+    a:hover { text-decoration:underline }
+
+    /* responsive */
+    @media (max-width:420px){
+      .toggle { width: 100% }
+    }
+  </style>
 </head>
 <body>
 
-<div class="card">
-  <h2 id="formTitle">Create Account</h2>
-  <div id="errorBox" class="error"></div>
+  <div class="card" role="main" aria-labelledby="formTitle">
+    <h2 id="formTitle">Create Account</h2>
 
-  <div id="registerForm">
-    <label>Name</label>
-    <input type="text" id="regName" placeholder="Full name" required>
-    <label>Email</label>
-    <input type="email" id="regEmail" placeholder="you@example.com" required>
-    <label>Password</label>
-    <input type="password" id="regPassword" placeholder="••••••" required>
-    <label>Confirm Password</label>
-    <input type="password" id="regConfirm" placeholder="••••••" required>
-    <button id="registerBtn">Register</button>
+    <!-- modern toggle -->
+    <div class="toggle" role="tablist" aria-label="Switch between register and login">
+      <button id="toggleRegister" class="active" role="tab" aria-selected="true">Register</button>
+      <button id="toggleLogin" role="tab" aria-selected="false">Login</button>
+    </div>
+
+    <div id="errorBox" class="error" aria-live="polite"></div>
+
+    <!-- Register form -->
+    <form id="registerForm" autocomplete="on">
+      <label for="regName">Name</label>
+      <input id="regName" name="regName" type="text" placeholder="Full name" required />
+
+      <label for="regEmail">Email</label>
+      <input id="regEmail" name="regEmail" type="email" placeholder="you@example.com" required />
+
+      <label for="regPassword">Password</label>
+      <input id="regPassword" name="regPassword" type="password" placeholder="••••••" required />
+
+      <label for="regConfirm">Confirm Password</label>
+      <input id="regConfirm" name="regConfirm" type="password" placeholder="••••••" required />
+
+      <div class="actions">
+        <button id="registerBtn" type="button" class="btn">Create account</button>
+      </div>
+    </form>
+
+    <!-- Login form (hidden initially) -->
+    <form id="loginForm" style="display:none" autocomplete="on">
+      <label for="logEmail">Email</label>
+      <input id="logEmail" name="logEmail" type="email" placeholder="you@example.com" required />
+
+      <label for="logPassword">Password</label>
+      <input id="logPassword" name="logPassword" type="password" placeholder="••••••" required />
+
+      <div class="actions">
+        <button id="loginBtn" type="button" class="btn">Login</button>
+        <button id="toRegisterBtn" type="button" class="btn secondary">Register</button>
+      </div>
+    </form>
+
+    <div class="small">
+      <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Forgot password? Contact support</a>
+    </div>
+
+    <footer>
+      <div style="margin-top:8px; color:var(--muted)">By continuing you agree to our terms.</div>
+    </footer>
   </div>
-
-  <div id="loginForm" style="display:none;">
-    <label>Email</label>
-    <input type="email" id="logEmail" placeholder="you@example.com" required>
-    <label>Password</label>
-    <input type="password" id="logPassword" placeholder="••••••" required>
-    <button id="loginBtn">Login</button>
-  </div>
-
-  <div class="switch" id="switchText">
-    Already have an account? <span id="toLogin">Login</span>
-  </div>
-
-  <footer>
-    <a href="https://wa.me/2348145415083" target="_blank">Forgot password? Contact support</a>
-  </footer>
-</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } 
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getDatabase, ref, set } 
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile,
+    onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+  // === Firebase config (keep same as your project) ===
   const firebaseConfig = {
     apiKey: "AIzaSyDc0bIipHU7N73mju33dNwSWmH3IeIYkog",
     authDomain: "ameernin-ba310.firebaseapp.com",
@@ -97,60 +178,126 @@
   const auth = getAuth(app);
   const db = getDatabase(app);
 
-  const regForm = document.getElementById('registerForm');
-  const logForm = document.getElementById('loginForm');
-  const toLogin = document.getElementById('toLogin');
-  const formTitle = document.getElementById('formTitle');
-  const switchText = document.getElementById('switchText');
+  // Elements
+  const toggleRegister = document.getElementById('toggleRegister');
+  const toggleLogin = document.getElementById('toggleLogin');
+  const registerForm = document.getElementById('registerForm');
+  const loginForm = document.getElementById('loginForm');
   const errorBox = document.getElementById('errorBox');
+  const formTitle = document.getElementById('formTitle');
+  const toRegisterBtn = document.getElementById('toRegisterBtn');
 
-  let isRegister = true;
-
-  toLogin.onclick = () => {
-    isRegister = !isRegister;
-    regForm.style.display = isRegister ? 'block' : 'none';
-    logForm.style.display = isRegister ? 'none' : 'block';
-    formTitle.textContent = isRegister ? 'Create Account' : 'Login';
-    switchText.innerHTML = isRegister ? 
-      `Already have an account? <span id="toLogin">Login</span>` :
-      `Don’t have an account? <span id="toLogin">Register</span>`;
-    document.getElementById('toLogin').onclick = toLogin.onclick;
+  // Toggle handlers
+  function showRegister() {
+    toggleRegister.classList.add('active');
+    toggleLogin.classList.remove('active');
+    registerForm.style.display = 'block';
+    loginForm.style.display = 'none';
+    formTitle.textContent = 'Create Account';
     errorBox.textContent = '';
-  };
-
-  document.getElementById('registerBtn').onclick = async () => {
-    const name = regName.value.trim();
-    const email = regEmail.value.trim();
-    const pass = regPassword.value;
-    const confirm = regConfirm.value;
+    toggleRegister.setAttribute('aria-selected','true');
+    toggleLogin.setAttribute('aria-selected','false');
+  }
+  function showLogin() {
+    toggleLogin.classList.add('active');
+    toggleRegister.classList.remove('active');
+    registerForm.style.display = 'none';
+    loginForm.style.display = 'block';
+    formTitle.textContent = 'Welcome back';
     errorBox.textContent = '';
-    if (!name || !email || !pass || pass !== confirm) {
-      errorBox.textContent = "Check your input or passwords mismatch.";
+    toggleLogin.setAttribute('aria-selected','true');
+    toggleRegister.setAttribute('aria-selected','false');
+  }
+  toggleRegister.addEventListener('click', showRegister);
+  toggleLogin.addEventListener('click', showLogin);
+  toRegisterBtn.addEventListener('click', showRegister);
+
+  // Keep auth persistence (local) so login survives browser close
+  setPersistence(auth, browserLocalPersistence).catch(()=>{ /* ignore */ });
+
+  // Auth state - save to localStorage for dashboard
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const userData = {
+        userId: user.uid,
+        username: user.displayName || user.email.split("@")[0],
+        email: user.email,
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("userId", userData.userId);
+      localStorage.setItem("username", userData.username);
+    } else {
+      // optional: do not auto-remove on page close; only remove on explicit logout
+      // localStorage.removeItem("user");
+      // localStorage.removeItem("userId");
+      // localStorage.removeItem("username");
+    }
+  });
+
+  // Register handler
+  document.getElementById('registerBtn').addEventListener('click', async () => {
+    errorBox.textContent = '';
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const pass = document.getElementById('regPassword').value;
+    const confirm = document.getElementById('regConfirm').value;
+
+    if (!name || !email || !pass) {
+      errorBox.textContent = 'Please fill all fields.';
+      return;
+    }
+    if (pass !== confirm) {
+      errorBox.textContent = 'Passwords do not match.';
+      return;
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      // set displayName
+      await updateProfile(cred.user, { displayName: name }).catch(()=>{});
+      // create DB record
+      await set(ref(db, 'users/' + cred.user.uid), {
+        name,
+        email,
+        balance: 0,
+        demoCount: 0,
+        createdAt: Date.now()
+      });
+      // localStorage will be set by onAuthStateChanged
+      window.location.href = 'dashboard.html';
+    } catch (e) {
+      console.error(e);
+      errorBox.textContent = e.message || 'Registration failed';
+    }
+  });
+
+  // Login handler
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    errorBox.textContent = '';
+    const email = document.getElementById('logEmail').value.trim();
+    const pass = document.getElementById('logPassword').value;
+    if (!email || !pass) {
+      errorBox.textContent = 'Please enter email and password.';
       return;
     }
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      await updateProfile(cred.user, { displayName: name });
-      await set(ref(db, 'users/' + cred.user.uid), {
-        name, email, balance: 0, demoCount: 0, createdAt: Date.now()
-      });
-      window.location.href = "dashboard.html";
-    } catch (e) {
-      errorBox.textContent = e.message;
-    }
-  };
-
-  document.getElementById('loginBtn').onclick = async () => {
-    const email = logEmail.value.trim();
-    const pass = logPassword.value;
-    errorBox.textContent = '';
-    try {
       await signInWithEmailAndPassword(auth, email, pass);
-      window.location.href = "dashboard.html";
+      // localStorage will be set by onAuthStateChanged
+      window.location.href = 'dashboard.html';
     } catch (e) {
-      errorBox.textContent = e.message;
+      console.error(e);
+      errorBox.textContent = e.message || 'Login failed';
     }
-  };
+  });
+
+  // Small improvement: keyboard Enter submits proper action
+  document.getElementById('registerForm').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('registerBtn').click(); }
+  });
+  document.getElementById('loginForm').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('loginBtn').click(); }
+  });
+
 </script>
 </body>
 </html>
