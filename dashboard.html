@@ -88,6 +88,47 @@
       margin-bottom: 10px;
       font-size: 1rem;
     }
+    footer {
+      margin-top: 30px;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    a {
+      color: #0ea5e9;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .history {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 12px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      display: none; /* hidden by default (collapsed) */
+      transition: max-height 0.25s ease;
+    }
+    .history-item {
+      padding: 6px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .history-toggle {
+      display: inline-block;
+      margin-bottom: 8px;
+      background: transparent;
+      color: #0ea5e9;
+      border: 1px solid #0ea5e9;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -108,8 +149,16 @@
 
     <hr style="margin:20px 0;">
 
+    <h3 style="margin-bottom:6px;">Transaction History</h3>
+    <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
+    <div id="history" class="history" aria-hidden="true">Loading...</div>
+
+    <hr style="margin:20px 0;">
+
     <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
     <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
+
+    <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
   </div>
 
   <!-- Add Fund Modal -->
@@ -124,35 +173,130 @@
     </div>
   </div>
 
+  <footer>
+    <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
+    <p>Design by <strong>Atech ICT Solution</strong></p>
+  </footer>
+
 <script>
 const baseURL = "https://9jame.netlify.app/.netlify/functions";
 const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 
-// Get user from localStorage (for demo)
-let userId = localStorage.getItem("userId") || "demoUser";
-let username = localStorage.getItem("username") || "Demo User";
+// --- Auth check: require login (no access to dashboard if not logged in) ---
+// Accept either:
+//  - localStorage 'user' JSON with { userId, username }
+//  - OR localStorage 'userId' and 'username' keys separately
+let userId = null;
+let username = null;
 
-// Display info
-document.getElementById("welcomeText").innerText = `Welcome, ${username}`;
-document.getElementById("userIdText").innerText = `User ID: ${userId}`;
+try {
+  const stored = localStorage.getItem('user');
+  if (stored) {
+    const obj = JSON.parse(stored);
+    if (obj && obj.userId) {
+      userId = obj.userId;
+      username = obj.username || obj.email || "User";
+    }
+  }
+} catch (e) {
+  // ignore parse errors
+}
 
+if (!userId) {
+  // fallback to individual keys
+  const uid = localStorage.getItem('userId');
+  const uname = localStorage.getItem('username');
+  if (uid) userId = uid;
+  if (uname) username = uname;
+}
+
+// If still no user info -> redirect to login page (no access)
+if (!userId) {
+  // optional: show message then redirect
+  alert("Please log in to access the dashboard.");
+  window.location.href = "index.html";
+} else {
+  // show user info
+  document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
+  document.getElementById("userIdText").innerText = `User ID: ${userId}`;
+}
+
+// --- Balance & History functions ---
 async function updateBalance() {
+  if (!userId) return;
   try {
-    const res = await fetch(`${FIREBASE_DB_URL}/users/${userId}.json`);
+    const res = await fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}.json`);
     const data = await res.json();
     document.getElementById("balance").innerText = data?.balance || 0;
   } catch {
     document.getElementById("balance").innerText = "0";
   }
 }
+
+// load history but keep it hidden until user opens it
+async function loadHistory() {
+  const historyDiv = document.getElementById("history");
+  if (!userId) {
+    historyDiv.innerHTML = "No user.";
+    return;
+  }
+  historyDiv.innerHTML = "Loading...";
+  try {
+    const res = await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`);
+    const data = await res.json();
+    if (!data) {
+      historyDiv.innerHTML = "No transactions yet.";
+      return;
+    }
+    const txs = Object.values(data).reverse();
+    historyDiv.innerHTML = txs.map(tx => `
+      <div class="history-item">
+        <strong>₦${tx.amount}</strong> - ${String(tx.status || '').toUpperCase()}<br>
+        <small>${new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString()}</small>
+      </div>
+    `).join('');
+  } catch (err) {
+    historyDiv.innerHTML = "Failed to load history.";
+  }
+}
+
+// initial balance load
 updateBalance();
 
-// Modal logic
+// auto-refresh when tab regains focus (useful after Paystack payment)
+window.addEventListener('focus', () => {
+  updateBalance();
+  // if history is open, reload it
+  if (document.getElementById('history').style.display === 'block') loadHistory();
+});
+
+// History toggle logic (collapsed drawer)
+const historyToggleBtn = document.getElementById('historyToggleBtn');
+historyToggleBtn.addEventListener('click', async () => {
+  const historyDiv = document.getElementById('history');
+  const isOpen = historyDiv.style.display === 'block';
+  if (isOpen) {
+    historyDiv.style.display = 'none';
+    historyDiv.setAttribute('aria-hidden', 'true');
+    historyToggleBtn.setAttribute('aria-expanded', 'false');
+    historyToggleBtn.innerText = 'View History';
+  } else {
+    // open and load history
+    historyDiv.style.display = 'block';
+    historyDiv.setAttribute('aria-hidden', 'false');
+    historyToggleBtn.setAttribute('aria-expanded', 'true');
+    historyToggleBtn.innerText = 'Hide History';
+    await loadHistory();
+  }
+});
+
+// Modal logic (unchanged)
 const fundModal = document.getElementById("fundModal");
 document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
 document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
 
 document.getElementById("payNowBtn").onclick = async () => {
+  if (!userId) return alert("Please log in to add funds.");
   const amount = parseInt(document.getElementById("fundAmount").value);
   if (!amount || amount < 50) return alert("Please enter at least ₦50");
   fundModal.style.display = "none";
@@ -173,6 +317,7 @@ document.getElementById("payNowBtn").onclick = async () => {
 
 // Verify Payment
 document.getElementById("verifyBtn").onclick = async () => {
+  if (!userId) return alert("Please log in to verify payments.");
   const ref = localStorage.getItem("ref");
   if (!ref) return alert("No pending transaction to verify.");
   const res = await fetch(`${baseURL}/verify-transaction`, {
@@ -185,8 +330,10 @@ document.getElementById("verifyBtn").onclick = async () => {
     alert("Payment verified successfully! Balance updated.");
     localStorage.removeItem("ref");
     updateBalance();
+    // reload history if open
+    if (document.getElementById('history').style.display === 'block') loadHistory();
   } else {
-    alert("Verification failed: " + data.error);
+    alert("Verification failed: " + (data.error || JSON.stringify(data)));
   }
 };
 
