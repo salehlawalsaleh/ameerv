@@ -1,353 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9jame Dashboard</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      text-align: center;
+    }
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 1rem 0;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .container {
+      max-width: 400px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      padding: 20px;
+    }
+    .balance-box {
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .balance-amount {
+      font-size: 1.8rem;
+      color: #0ea5e9;
+    }
+    button {
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0284c7;
+    }
+    .green-btn {
+      background: #10b981;
+    }
+    .green-btn:hover {
+      background: #059669;
+    }
+    .gray-btn {
+      background: #64748b;
+    }
+    .gray-btn:hover {
+      background: #475569;
+    }
+    #fundModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      width: 90%;
+      max-width: 320px;
+    }
+    .modal-content input {
+      width: 80%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+    footer {
+      margin-top: 30px;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    a {
+      color: #0ea5e9;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .history {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 12px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      display: none; /* hidden by default (collapsed) */
+      transition: max-height 0.25s ease;
+    }
+    .history-item {
+      padding: 6px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .history-toggle {
+      display: inline-block;
+      margin-bottom: 8px;
+      background: transparent;
+      color: #0ea5e9;
+      border: 1px solid #0ea5e9;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
 
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-  <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />  
-  <title>9jame Dashboard</title>  
-  <style>  
-    body {  
-      font-family: 'Poppins', sans-serif;  
-      background: #f8fafc;  
-      margin: 0;  
-      padding: 0;  
-      color: #333;  
-      text-align: center;  
-    }  
-    header {  
-      background: #0f172a;  
-      color: white;  
-      padding: 1rem 0;  
-      font-size: 1.2rem;  
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);  
-    }  
-    .container {  
-      max-width: 400px;  
-      margin: 2rem auto;  
-      background: white;  
-      border-radius: 15px;  
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);  
-      padding: 20px;  
-    }  
-    .balance-box {  
-      background: #f1f5f9;  
-      padding: 15px;  
-      border-radius: 10px;  
-      margin-bottom: 20px;  
-    }  
-    .balance-amount {  
-      font-size: 1.8rem;  
-      color: #0ea5e9;  
-    }  
-    button {  
-      background: #0ea5e9;  
-      color: white;  
-      border: none;  
-      padding: 10px 20px;  
-      border-radius: 8px;  
-      cursor: pointer;  
-      transition: 0.3s;  
-      margin-top: 10px;  
-    }  
-    button:hover { background: #0284c7; }  
-    .green-btn { background: #10b981; }  
-    .green-btn:hover { background: #059669; }  
-    .gray-btn { background: #64748b; }  
-    .gray-btn:hover { background: #475569; }  
-    #fundModal {  
-      display: none;  
-      position: fixed;  
-      top: 0; left: 0; right: 0; bottom: 0;  
-      background: rgba(0,0,0,0.5);  
-      justify-content: center;  
-      align-items: center;  
-      z-index: 999;  
-    }  
-    .modal-content {  
-      background: #fff;  
-      padding: 20px;  
-      border-radius: 15px;  
-      text-align: center;  
-      width: 90%;  
-      max-width: 320px;  
-    }  
-    .modal-content input {  
-      width: 80%;  
-      padding: 8px;  
-      border: 1px solid #ddd;  
-      border-radius: 6px;  
-      margin-bottom: 10px;  
-      font-size: 1rem;  
-    }  
-    footer {  
-      margin-top: 30px;  
-      color: #64748b;  
-      font-size: 0.9rem;  
-    }  
-    a { color: #0ea5e9; text-decoration: none; }  
-    a:hover { text-decoration: underline; }  
-  
-    /* History styling - preserve margins of items */  
-    .history {  
-      background: #f8fafc;  
-      border-radius: 10px;  
-      padding: 10px;  
-      margin-top: 12px;  
-      text-align: left;  
-      max-height: 200px;  
-      overflow-y: auto;  
-      font-size: 0.9rem;  
-      display: none;  
-    }  
-    .history-item {  
-      padding: 6px;  
-      border-bottom: 1px solid #e5e7eb;  
-    }  
-    .history-item:last-child { border-bottom: none; }  
-    .history-toggle {  
-      display: inline-block;  
-      margin-bottom: 8px;  
-      background: transparent;  
-      color: #0ea5e9;  
-      border: 1px solid #0ea5e9;  
-      padding: 6px 10px;  
-      border-radius: 8px;  
-      cursor: pointer;  
-    }  
-  
-    /* Status colors */  
-    .status-success { color: #10b981; font-weight: 600; }  
-    .status-pending { color: #ef4444; font-weight: 700; }  
-  
-    button[disabled] { opacity: 0.6; cursor: not-allowed; }  
-  </style>  
-</head>  
-<body>  
-  
-<header>9jame Dashboard</header>  
-  
-<div class="container">  
-  <h2 id="welcomeText">Welcome, Guest</h2>  
-  <p id="userIdText">User ID: -</p>  
-  
-  <div class="balance-box">  
-    <p>Available Balance:</p>  
-    <p class="balance-amount">₦<span id="balance">0</span></p>  
-  </div>  
-  
-  <button id="addFundBtn">Add Fund</button>  
-  <button id="verifyBtn" class="green-btn">Verify Payment</button>  
-  
-  <hr style="margin:20px 0;">  
-  
-  <h3 style="margin-bottom:6px;">Transaction History</h3>  
-  <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>  
-  <div id="history" class="history" aria-hidden="true">Loading...</div>  
-  
-  <hr style="margin:20px 0;">  
-  
-  <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>  
-  <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>  
-  
-  <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>  
-</div>  
-  
-<!-- Add Fund Modal -->  
-<div id="fundModal">  
-  <div class="modal-content">  
-    <h3>Add Fund</h3>  
-    <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />  
-    <div>  
-      <button id="payNowBtn">Pay Now</button>  
-      <button id="cancelBtn" class="gray-btn">Cancel</button>  
-    </div>  
-  </div>  
-</div>  
-  
-<footer>  
-  <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>  
-  <p>Design by <strong>Atech ICT Solution</strong></p>  
-</footer>  
-  
-<script>  
-const baseURL = "https://9jame.netlify.app/.netlify/functions";  
-const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";  
-  
-let userId = null;  
-let username = null;  
-  
-try {  
-  const stored = localStorage.getItem('user');  
-  if (stored) {  
-    const obj = JSON.parse(stored);  
-    if (obj && obj.userId) { userId = obj.userId; username = obj.username || obj.email || "User"; }  
-  }  
-} catch {}  
-  
-if (!userId) {  
-  const uid = localStorage.getItem('userId');  
-  const uname = localStorage.getItem('username');  
-  if (uid) userId = uid;  
-  if (uname) username = uname;  
-}  
-  
-if (!userId) {  
-  alert("Please log in to access the dashboard.");  
-  window.location.href = "index.html";  
-} else {  
-  document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;  
-  document.getElementById("userIdText").innerText = `User ID: ${userId}`;  
-}  
-  
-// Balance  
-async function updateBalance() {  
-  if (!userId) return;  
-  try {  
-    const res = await fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}.json`);  
-    const data = await res.json();  
-    document.getElementById("balance").innerText = data?.balance || 0;  
-  } catch { document.getElementById("balance").innerText = "0"; }  
-}  
-  
-// History  
-async function loadHistory() {  
-  const historyDiv = document.getElementById("history");  
-  if (!userId) { historyDiv.innerHTML = "No user."; return; }  
-  historyDiv.innerHTML = "Loading...";  
-  try {  
-    const res = await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`);  
-    const data = await res.json();  
-    if (!data) { historyDiv.innerHTML = "No transactions yet."; return; }  
-    const txs = Object.values(data).reverse();  
-  
-    historyDiv.innerHTML = txs.map(tx => {  
-      const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();  
-      let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';  
-      let statusClass = '';  
-      if (statusRaw === 'success' || statusRaw === 'verified') { statusClass = 'status-success'; statusLabel = 'SUCCESS'; }  
-      else if (statusRaw === 'pending') { statusClass = 'status-pending'; statusLabel = 'PENDING'; }  
-      const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();  
-      const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');  
-      return `  
-        <div class="history-item">  
-          <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>  
-          <small>${when}</small>  
-        </div>  
-      `;  
-    }).join('');  
-  } catch (err) { console.error(err); historyDiv.innerHTML = "Failed to load history."; }  
-}  
-  
-updateBalance();  
-  
-// Verify  
-async function runVerify(reference) {  
-  if (!userId || !reference) return { ok: false, message: "No reference or user." };  
-  const verifyBtn = document.getElementById('verifyBtn');  
-  const prevText = verifyBtn.innerText;  
-  verifyBtn.disabled = true;  
-  verifyBtn.innerText = 'Verifying...';  
-  try {  
-    const res = await fetch(`${baseURL}/verify-transaction`, {  
-      method: "POST",  
-      headers: { "Content-Type": "application/json" },  
-      body: JSON.stringify({ reference, userId })  
-    });  
-    const data = await res.json();  
-    verifyBtn.disabled = false;  
-    verifyBtn.innerText = prevText;  
-    if (data.status === "ok") {  
-      localStorage.removeItem("ref");  
-      updateBalance();  
-      if (document.getElementById('history').style.display === 'block') loadHistory();  
-      return { ok: true, data };  
-    } else return { ok: false, data };  
-  } catch (err) {  
-    console.error('verify error', err);  
-    verifyBtn.disabled = false;  
-    verifyBtn.innerText = prevText;  
-    return { ok: false, error: err };  
-  }  
-}  
-  
-// Auto-verify once  
-async function tryAutoVerifyOnce() {  
-  if (!userId) return;  
-  const ref = localStorage.getItem('ref');  
-  if (!ref) return;  
-  try {  
-    const result = await runVerify(ref);  
-    if (result.ok) { try { alert("Payment verified automatically — balance updated."); } catch {} }  
-    else console.log('Auto-verify attempted; not yet verified.', result);  
-  } catch (e) { console.error('Auto-verify failure', e); }  
-}  
-  
-tryAutoVerifyOnce();  
-  
-window.addEventListener('focus', () => {  
-  updateBalance();  
-  if (document.getElementById('history').style.display === 'block') loadHistory();  
-  tryAutoVerifyOnce();  
-});  
-  
-// History toggle  
-const historyToggleBtn = document.getElementById('historyToggleBtn');  
-historyToggleBtn.addEventListener('click', async () => {  
-  const historyDiv = document.getElementById('history');  
-  const isOpen = historyDiv.style.display === 'block';  
-  if (isOpen) {  
-    historyDiv.style.display = 'none';  
-    historyDiv.setAttribute('aria-hidden', 'true');  
-    historyToggleBtn.setAttribute('aria-expanded', 'false');  
-    historyToggleBtn.innerText = 'View History';  
-  } else {  
-    historyDiv.style.display = 'block';  
-    historyDiv.setAttribute('aria-hidden', 'false');  
-    historyToggleBtn.setAttribute('aria-expanded', 'true');  
-    historyToggleBtn.innerText = 'Hide History';  
-    await loadHistory();  
-  }  
-});  
-  
-// Modal  
-const fundModal = document.getElementById("fundModal");  
-document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";  
-document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";  
-  
-document.getElementById("payNowBtn").onclick = async () => {  
-  if (!userId) return alert("Please log in to add funds.");  
-  const amount = parseInt(document.getElementById("fundAmount").value);  
-  if (!amount || amount < 50) return alert("Please enter at least ₦50");  
-  fundModal.style.display = "none";  
-  const res = await fetch(`${baseURL}/create-transaction`, {  
-    method: "POST",  
-    headers: { "Content-Type": "application/json" },  
-    body: JSON.stringify({ userId, amount })  
-  });  
-  const data = await res.json();  
-  if (data.checkoutUrl) {  
-    localStorage.setItem("ref", data.reference);  
-    window.open(data.checkoutUrl, "_blank");  
-    alert("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or click Verify.");  
-  } else alert("Error: " + (data.error || JSON.stringify(data)));  
-};  
-  
-// Manual verify  
-document.getElementById("verifyBtn").onclick = async () => {  
-  if (!userId) return alert("Please log in to verify payments.");  
-  const ref = localStorage.getItem("ref");  
-  if (!ref) return alert("No pending transaction to verify.");  
-  const result = await runVerify(ref);  
-  if (result.ok) {  
-    alert("Payment verified successfully! Balance updated.");  
-    localStorage.removeItem("ref");  
-    updateBalance();  
-    if (document.getElementById('history').style.display === 'block') loadHistory();  
-  } else alert("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."));  
-};  
-  
-// Get NIN button  
-document.getElementById("getNINBtn").onclick = () => { window.location.href = "ni.html"; };  
-</script>  
-</body>  
+  <header>9jame Dashboard</header>
+
+  <div class="container">
+    <h2 id="welcomeText">Welcome, Guest</h2>
+    <p id="userIdText">User ID: -</p>
+
+    <div class="balance-box">
+      <p>Available Balance:</p>
+      <p class="balance-amount">₦<span id="balance">0</span></p>
+    </div>
+
+    <button id="addFundBtn">Add Fund</button>
+    <button id="verifyBtn" class="green-btn">Verify Payment</button>
+
+    <hr style="margin:20px 0;">
+
+    <h3 style="margin-bottom:6px;">Transaction History</h3>
+    <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
+    <div id="history" class="history" aria-hidden="true">Loading...</div>
+
+    <hr style="margin:20px 0;">
+
+    <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
+    <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
+
+    <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
+  </div>
+
+  <!-- Add Fund Modal -->
+  <div id="fundModal">
+    <div class="modal-content">
+      <h3>Add Fund</h3>
+      <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
+      <div>
+        <button id="payNowBtn">Pay Now</button>
+        <button id="cancelBtn" class="gray-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
+    <p>Design by <strong>Atech ICT Solution</strong></p>
+  </footer>
+
+<script>
+const baseURL = "https://9jame.netlify.app/.netlify/functions";
+const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
+
+// --- Auth check: require login (no access to dashboard if not logged in) ---
+// Accept either:
+//  - localStorage 'user' JSON with { userId, username }
+//  - OR localStorage 'userId' and 'username' keys separately
+let userId = null;
+let username = null;
+
+try {
+  const stored = localStorage.getItem('user');
+  if (stored) {
+    const obj = JSON.parse(stored);
+    if (obj && obj.userId) {
+      userId = obj.userId;
+      username = obj.username || obj.email || "User";
+    }
+  }
+} catch (e) {
+  // ignore parse errors
+}
+
+if (!userId) {
+  // fallback to individual keys
+  const uid = localStorage.getItem('userId');
+  const uname = localStorage.getItem('username');
+  if (uid) userId = uid;
+  if (uname) username = uname;
+}
+
+// If still no user info -> redirect to login page (no access)
+if (!userId) {
+  // optional: show message then redirect
+  alert("Please log in to access the dashboard.");
+  window.location.href = "index.html";
+} else {
+  // show user info
+  document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
+  document.getElementById("userIdText").innerText = `User ID: ${userId}`;
+}
+
+// --- Balance & History functions ---
+async function updateBalance() {
+  if (!userId) return;
+  try {
+    const res = await fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}.json`);
+    const data = await res.json();
+    document.getElementById("balance").innerText = data?.balance || 0;
+  } catch {
+    document.getElementById("balance").innerText = "0";
+  }
+}
+
+// load history but keep it hidden until user opens it
+async function loadHistory() {
+  const historyDiv = document.getElementById("history");
+  if (!userId) {
+    historyDiv.innerHTML = "No user.";
+    return;
+  }
+  historyDiv.innerHTML = "Loading...";
+  try {
+    const res = await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`);
+    const data = await res.json();
+    if (!data) {
+      historyDiv.innerHTML = "No transactions yet.";
+      return;
+    }
+    const txs = Object.values(data).reverse();
+    historyDiv.innerHTML = txs.map(tx => `
+      <div class="history-item">
+        <strong>₦${tx.amount}</strong> - ${String(tx.status || '').toUpperCase()}<br>
+        <small>${new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString()}</small>
+      </div>
+    `).join('');
+  } catch (err) {
+    historyDiv.innerHTML = "Failed to load history.";
+  }
+}
+
+// initial balance load
+updateBalance();
+
+// auto-refresh when tab regains focus (useful after Paystack payment)
+window.addEventListener('focus', () => {
+  updateBalance();
+  // if history is open, reload it
+  if (document.getElementById('history').style.display === 'block') loadHistory();
+});
+
+// History toggle logic (collapsed drawer)
+const historyToggleBtn = document.getElementById('historyToggleBtn');
+historyToggleBtn.addEventListener('click', async () => {
+  const historyDiv = document.getElementById('history');
+  const isOpen = historyDiv.style.display === 'block';
+  if (isOpen) {
+    historyDiv.style.display = 'none';
+    historyDiv.setAttribute('aria-hidden', 'true');
+    historyToggleBtn.setAttribute('aria-expanded', 'false');
+    historyToggleBtn.innerText = 'View History';
+  } else {
+    // open and load history
+    historyDiv.style.display = 'block';
+    historyDiv.setAttribute('aria-hidden', 'false');
+    historyToggleBtn.setAttribute('aria-expanded', 'true');
+    historyToggleBtn.innerText = 'Hide History';
+    await loadHistory();
+  }
+});
+
+// Modal logic (unchanged)
+const fundModal = document.getElementById("fundModal");
+document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
+document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
+
+document.getElementById("payNowBtn").onclick = async () => {
+  if (!userId) return alert("Please log in to add funds.");
+  const amount = parseInt(document.getElementById("fundAmount").value);
+  if (!amount || amount < 50) return alert("Please enter at least ₦50");
+  fundModal.style.display = "none";
+  const res = await fetch(`${baseURL}/create-transaction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, amount })
+  });
+  const data = await res.json();
+  if (data.checkoutUrl) {
+    localStorage.setItem("ref", data.reference);
+    window.open(data.checkoutUrl, "_blank");
+    alert("Payment page opened. After payment, click Verify.");
+  } else {
+    alert("Error: " + data.error);
+  }
+};
+
+// Verify Payment
+document.getElementById("verifyBtn").onclick = async () => {
+  if (!userId) return alert("Please log in to verify payments.");
+  const ref = localStorage.getItem("ref");
+  if (!ref) return alert("No pending transaction to verify.");
+  const res = await fetch(`${baseURL}/verify-transaction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reference: ref, userId })
+  });
+  const data = await res.json();
+  if (data.status === "ok") {
+    alert("Payment verified successfully! Balance updated.");
+    localStorage.removeItem("ref");
+    updateBalance();
+    // reload history if open
+    if (document.getElementById('history').style.display === 'block') loadHistory();
+  } else {
+    alert("Verification failed: " + (data.error || JSON.stringify(data)));
+  }
+};
+
+// Get NIN button
+document.getElementById("getNINBtn").onclick = () => {
+  window.location.href = "ni.html";
+};
+</script>
+</body>
 </html>
