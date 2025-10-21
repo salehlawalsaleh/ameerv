@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VerifyMe Dashboard</title>
+  <title>9jame Dashboard</title>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -130,20 +130,16 @@
       cursor: pointer;
     }
 
-    /* New status classes (kept minimal to avoid changing existing style) */
+    /* Status styling per request */
     .status-success {
       color: #10b981; /* green */
-      font-weight: 700;
+      font-weight: 600;
     }
     .status-pending {
       color: #ef4444; /* red */
-      font-weight: 700;
-    }
-    .status-other {
-      font-weight: 600;
+      font-weight: 700; /* bold for pending */
     }
 
-    /* small helper for disabled button look */
     button[disabled] {
       opacity: 0.6;
       cursor: not-allowed;
@@ -260,39 +256,27 @@ async function loadHistory() {
       historyDiv.innerHTML = "No transactions yet.";
       return;
     }
-    // transactions stored as object — convert to array and reverse chronological
     const txs = Object.values(data).reverse();
 
-    // Filter: only show DEBIT transactions.
-    // Common database keys vary; this filter tries multiple possible keys.
-    const debitTxs = txs.filter(tx => {
-      try {
-        const type = (tx.type || tx.direction || tx.category || '').toString().toLowerCase();
-        const isDebitFlag = tx.isDebit === true || tx.is_debit === true;
-        const amountNegative = tx.amount !== undefined && !isNaN(Number(tx.amount)) && Number(tx.amount) < 0;
-        return type === 'debit' || isDebitFlag || amountNegative;
-      } catch (e) {
-        return false;
-      }
-    });
-
-    if (!debitTxs || debitTxs.length === 0) {
-      historyDiv.innerHTML = "No debit transactions.";
-      return;
-    }
-
-    historyDiv.innerHTML = debitTxs.map(tx => {
+    historyDiv.innerHTML = txs.map(tx => {
       const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
-      const statusLabel = statusRaw === 'success' || statusRaw === 'verified' ? 'SUCCESS'
-                        : statusRaw === 'pending' ? 'PENDING'
-                        : (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
+      let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
+      let statusClass = '';
 
-      const statusClass = statusRaw === 'success' || statusRaw === 'verified' ? 'status-success'
-                        : statusRaw === 'pending' ? 'status-pending'
-                        : 'status-other';
+      if (statusRaw === 'success' || statusRaw === 'verified') {
+        statusClass = 'status-success';
+        statusLabel = 'SUCCESS';
+      } else if (statusRaw === 'pending') {
+        statusClass = 'status-pending';
+        statusLabel = 'PENDING';
+      } else {
+        statusClass = '';
+        statusLabel = (tx.status || statusLabel);
+      }
 
       const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();
       const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');
+
       return `
         <div class="history-item">
           <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
@@ -309,14 +293,10 @@ async function loadHistory() {
 // initial balance load
 updateBalance();
 
-// AUTO-VERIFY logic:
-// - If localStorage has "ref", try to verify it automatically every 10 seconds.
-// - If verification succeeds, clear the ref, update balance and reload history (if open).
-let autoVerifyInterval = null;
+// VERIFY function used by manual button and auto-on-enter/focus
 async function runVerify(reference) {
   if (!userId || !reference) return { ok: false, message: "No reference or user." };
 
-  // provide UI feedback on manual verify button
   const verifyBtn = document.getElementById('verifyBtn');
   const prevText = verifyBtn.innerText;
   verifyBtn.disabled = true;
@@ -330,7 +310,6 @@ async function runVerify(reference) {
     });
     const data = await res.json();
 
-    // restore button
     verifyBtn.disabled = false;
     verifyBtn.innerText = prevText;
 
@@ -339,67 +318,46 @@ async function runVerify(reference) {
       localStorage.removeItem("ref");
       updateBalance();
       if (document.getElementById('history').style.display === 'block') loadHistory();
-
-      // stop auto-check if running
-      if (autoVerifyInterval) {
-        clearInterval(autoVerifyInterval);
-        autoVerifyInterval = null;
-      }
-
       return { ok: true, data };
     } else {
-      // not yet successful or error
+      // not successful yet
       return { ok: false, data };
     }
   } catch (err) {
     console.error('verify error', err);
-    const verifyBtn = document.getElementById('verifyBtn');
     verifyBtn.disabled = false;
     verifyBtn.innerText = prevText;
     return { ok: false, error: err };
   }
 }
 
-function startAutoVerify() {
-  if (autoVerifyInterval) return;
-  // run immediately then every 10s
-  const attempt = async () => {
-    const ref = localStorage.getItem('ref');
-    if (!ref) {
-      if (autoVerifyInterval) {
-        clearInterval(autoVerifyInterval);
-        autoVerifyInterval = null;
-      }
-      return;
+// Auto-verify ONCE when entering dashboard or returning to it (focus).
+// It will not poll repeatedly; only attempts a single verify if a reference exists.
+async function tryAutoVerifyOnce() {
+  if (!userId) return;
+  const ref = localStorage.getItem('ref');
+  if (!ref) return;
+  try {
+    const result = await runVerify(ref);
+    if (result.ok) {
+      try { alert("Payment verified automatically — balance updated."); } catch (e) {}
+    } else {
+      // leave ref for manual verify; no repeated auto polling
+      console.log('Auto-verify attempted; not yet verified.', result);
     }
-    try {
-      const result = await runVerify(ref);
-      if (result.ok) {
-        // notify user that auto verification succeeded
-        try { alert("Payment verified successfully (automatic). Balance updated."); } catch(e) {}
-      } else {
-        // still pending or error: keep trying silently (logged to console)
-        console.log('Auto-verify attempt result:', result);
-      }
-    } catch (e) {
-      console.error('Auto verify failed', e);
-    }
-  };
-  // run one attempt now, then interval
-  attempt();
-  autoVerifyInterval = setInterval(attempt, 10000);
+  } catch (e) {
+    console.error('Auto-verify failure', e);
+  }
 }
 
-// attempt to start auto verify on load (if user had opened checkout in same session)
-startAutoVerify();
+// Try auto-verify when page loads (but after we set user info)
+tryAutoVerifyOnce();
 
-// auto-refresh when tab regains focus (useful after Paystack payment)
+// Also try auto-verify when window regains focus (i.e., user returns to dashboard)
 window.addEventListener('focus', () => {
   updateBalance();
-  // if history is open, reload it
   if (document.getElementById('history').style.display === 'block') loadHistory();
-  // also try auto-verify when returning to tab
-  startAutoVerify();
+  tryAutoVerifyOnce();
 });
 
 // History toggle logic (collapsed drawer)
@@ -439,18 +397,15 @@ document.getElementById("payNowBtn").onclick = async () => {
   });
   const data = await res.json();
   if (data.checkoutUrl) {
-    // store reference locally so auto-verify can pick it up
     localStorage.setItem("ref", data.reference);
     window.open(data.checkoutUrl, "_blank");
-    alert("Payment page opened. After payment, verification will run automatically, or you can click Verify.");
-    // start auto verify loop (in case it isn't running)
-    startAutoVerify();
+    alert("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or you may click Verify.");
   } else {
     alert("Error: " + (data.error || JSON.stringify(data)));
   }
 };
 
-// Manual Verify Payment (calls same runVerify function used by auto-check)
+// Manual Verify Payment
 document.getElementById("verifyBtn").onclick = async () => {
   if (!userId) return alert("Please log in to verify payments.");
   const ref = localStorage.getItem("ref");
@@ -462,7 +417,7 @@ document.getElementById("verifyBtn").onclick = async () => {
     updateBalance();
     if (document.getElementById('history').style.display === 'block') loadHistory();
   } else {
-    alert("Verification attempt: " + (result.data?.error || "Not yet verified. Try again or wait a few seconds."));
+    alert("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."));
   }
 };
 
