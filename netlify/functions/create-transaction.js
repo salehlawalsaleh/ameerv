@@ -1,42 +1,62 @@
 // netlify/functions/create-transaction.js
-const { v4: uuidv4 } = require('uuid');
-const { rdb } = require('./lib/firebase-admin');
-
-exports.handler = async function(event) {
+export async function handler(event) {
   try {
-    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
-    const body = JSON.parse(event.body || '{}');
-    const { userId, amount } = body;
-    if (!userId || !amount) return { statusCode: 400, body: JSON.stringify({ message: 'Missing userId or amount' }) };
+    const { userId, amount } = JSON.parse(event.body);
+    if (!userId || !amount) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing userId or amount" }),
+      };
+    }
 
-    // create reference
-    const reference = `txn_${uuidv4()}`;
-    const amountKobo = Math.round(Number(amount) * 100);
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+    const FIREBASE_DB_URL = process.env.FIREBASE_DATABASE_URL;
 
-    const tx = {
-      reference,
-      userId,
-      amount: amountKobo,
-      currency: 'NGN',
-      status: 'pending',
-      createdAt: Date.now()
-    };
+    // 1️⃣ Create Paystack transaction
+    const payRes = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+      },
+      body: JSON.stringify({
+        amount: amount * 100,
+        email: `${userId}@9jame.net`,
+        callback_url: `https://9jame.netlify.app/success.html?uid=${userId}`,
+      }),
+    });
 
-    // save pending transaction under /transactions and under user's transactions (quick lookup)
-    await rdb.ref(`transactions/${reference}`).set(tx);
-    const userTxRef = rdb.ref(`users/${userId}/transactions`).push();
-    await userTxRef.set(Object.assign({}, tx, { _refKey: userTxRef.key }));
+    const payData = await payRes.json();
+    if (!payData.status) {
+      throw new Error("Paystack error: " + payData.message);
+    }
 
-    // return reference + public key
+    // 2️⃣ Save pending transaction to Firebase via REST
+    await fetch(`${FIREBASE_DB_URL}/transactions/${userId}.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reference: payData.data.reference,
+        amount,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      }),
+    });
+
+    // 3️⃣ Return Paystack checkout URL
     return {
       statusCode: 200,
       body: JSON.stringify({
-        reference,
-        publicKey: process.env.PAYSTACK_PUBLIC_KEY || ''
-      })
+        status: "ok",
+        reference: payData.data.reference,
+        checkoutUrl: payData.data.authorization_url,
+      }),
     };
   } catch (err) {
     console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ message: err.message }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
   }
-};
+}
