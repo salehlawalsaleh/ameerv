@@ -47,19 +47,46 @@ export async function handler(event) {
       body: JSON.stringify({ balance: newBalance }),
     });
 
-    // 4️⃣ Save transaction record
-    await fetch(`${FIREBASE_DB_URL}/transactions/${userId}.json`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        reference,
-        amount,
-        status: "success",
-        verifiedAt: new Date().toISOString(),
-      }),
-    });
+    // 4️⃣ Check if transaction exists (update if pending)
+    const txRes = await fetch(`${FIREBASE_DB_URL}/transactions/${userId}.json`);
+    const txData = await txRes.json();
 
-    // 5️⃣ Done
+    let updated = false;
+
+    if (txData) {
+      const keys = Object.keys(txData);
+      for (const key of keys) {
+        if (txData[key].reference === reference) {
+          // Update existing record to success
+          await fetch(`${FIREBASE_DB_URL}/transactions/${userId}/${key}.json`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "success",
+              verifiedAt: new Date().toISOString(),
+            }),
+          });
+          updated = true;
+          break;
+        }
+      }
+    }
+
+    // 5️⃣ If not found, create a new transaction record
+    if (!updated) {
+      await fetch(`${FIREBASE_DB_URL}/transactions/${userId}.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reference,
+          amount,
+          status: "success",
+          verifiedAt: new Date().toISOString(),
+        }),
+      });
+    }
+
+    // ✅ Done
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -69,7 +96,7 @@ export async function handler(event) {
       }),
     };
   } catch (err) {
-    console.error(err);
+    console.error("Verify transaction error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
