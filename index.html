@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AmeerTech — Auth</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #fff; --ink: #0f172a; --muted: #64748b; 
+    --brand: #0ea5a0; --brand-2: #007f5f; --danger:#ef4444;
+  }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    background: var(--bg);
+    margin: 0; padding: 0; display: grid; place-items: center;
+    min-height: 100vh; color: var(--ink);
+  }
+  .card {
+    background: var(--card); border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(2,8,23,0.08);
+    padding: 24px; max-width: 380px; width: 90%;
+  }
+  h2 { text-align: center; font-weight: 800; margin-bottom: 20px; }
+  label { display: block; font-weight: 700; margin-bottom: 4px; font-size: 13px; }
+  input {
+    width: 100%; padding: 10px; border: 1px solid #e2e8f0;
+    border-radius: 10px; margin-bottom: 12px;
+  }
+  input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px rgba(14,165,160,.15); }
+  button {
+    width: 100%; padding: 12px; border: none;
+    border-radius: 10px; background: linear-gradient(135deg, var(--brand-2), var(--brand));
+    color: #fff; font-weight: 800; cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .switch { text-align: center; margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .switch span { color: var(--brand-2); cursor: pointer; font-weight: 700; }
+  .error { color: var(--danger); text-align: center; margin-bottom: 10px; font-weight: 700; }
+  footer { text-align: center; margin-top: 16px; font-size: 13px; color: var(--muted); }
+  a { color: var(--brand-2); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2 id="formTitle">Create Account</h2>
+  <div id="errorBox" class="error"></div>
+
+  <div id="registerForm">
+    <label>Name</label>
+    <input type="text" id="regName" placeholder="Full name" required>
+    <label>Email</label>
+    <input type="email" id="regEmail" placeholder="you@example.com" required>
+    <label>Password</label>
+    <input type="password" id="regPassword" placeholder="••••••" required>
+    <label>Confirm Password</label>
+    <input type="password" id="regConfirm" placeholder="••••••" required>
+    <button id="registerBtn">Register</button>
+  </div>
+
+  <div id="loginForm" style="display:none;">
+    <label>Email</label>
+    <input type="email" id="logEmail" placeholder="you@example.com" required>
+    <label>Password</label>
+    <input type="password" id="logPassword" placeholder="••••••" required>
+    <button id="loginBtn">Login</button>
+  </div>
+
+  <div class="switch" id="switchText">
+    Already have an account? <span id="toLogin">Login</span>
+  </div>
+
+  <footer>
+    <a href="https://wa.me/2348145415083" target="_blank">Forgot password? Contact support</a>
+  </footer>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } 
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getDatabase, ref, set } 
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDc0bIipHU7N73mju33dNwSWmH3IeIYkog",
+    authDomain: "ameernin-ba310.firebaseapp.com",
+    databaseURL: "https://ameernin-ba310-default-rtdb.firebaseio.com",
+    projectId: "ameernin-ba310",
+    storageBucket: "ameernin-ba310.appspot.com",
+    messagingSenderId: "522206845073",
+    appId: "1:522206845073:web:3c85714bd7eda6c1048730",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const regForm = document.getElementById('registerForm');
+  const logForm = document.getElementById('loginForm');
+  const toLogin = document.getElementById('toLogin');
+  const formTitle = document.getElementById('formTitle');
+  const switchText = document.getElementById('switchText');
+  const errorBox = document.getElementById('errorBox');
+
+  let isRegister = true;
+
+  toLogin.onclick = () => {
+    isRegister = !isRegister;
+    regForm.style.display = isRegister ? 'block' : 'none';
+    logForm.style.display = isRegister ? 'none' : 'block';
+    formTitle.textContent = isRegister ? 'Create Account' : 'Login';
+    switchText.innerHTML = isRegister ? 
+      `Already have an account? <span id="toLogin">Login</span>` :
+      `Don’t have an account? <span id="toLogin">Register</span>`;
+    document.getElementById('toLogin').onclick = toLogin.onclick;
+    errorBox.textContent = '';
+  };
+
+  document.getElementById('registerBtn').onclick = async () => {
+    const name = regName.value.trim();
+    const email = regEmail.value.trim();
+    const pass = regPassword.value;
+    const confirm = regConfirm.value;
+    errorBox.textContent = '';
+    if (!name || !email || !pass || pass !== confirm) {
+      errorBox.textContent = "Check your input or passwords mismatch.";
+      return;
+    }
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+      await set(ref(db, 'users/' + cred.user.uid), {
+        name, email, balance: 0, demoCount: 0, createdAt: Date.now()
+      });
+      window.location.href = "dashboard.html";
+    } catch (e) {
+      errorBox.textContent = e.message;
+    }
+  };
+
+  document.getElementById('loginBtn').onclick = async () => {
+    const email = logEmail.value.trim();
+    const pass = logPassword.value;
+    errorBox.textContent = '';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      window.location.href = "dashboard.html";
+    } catch (e) {
+      errorBox.textContent = e.message;
+    }
+  };
+</script>
+</body>
+</html>

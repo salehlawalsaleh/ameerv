@@ -1,0 +1,13 @@
+{
+  "name": "my-paystack-firebase-app",
+  "version": "1.0.0",
+  "description": "Demo repo: Paystack + Firebase + Netlify Functions for wallet top-up and NIN slip generator",
+  "scripts": {
+    "start": "echo 'This repo is meant to be deployed to Netlify (functions in netlify/functions).' && exit 0"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "uuid": "^9.0.0",
+    "node-fetch": "^2.6.7"
+  }
+}
