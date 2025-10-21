@@ -50,6 +50,26 @@
           <button id="refreshBtn" class="btn-ghost">Refresh</button>
         </div>
         <div class="notice">Click <b>Add Fund</b> to top up your wallet with Paystack. After successful payment, balance updates automatically.</div>
+<!-- Add Fund Modal -->
+<div id="addFundModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
+  <div style="background:#fff; border-radius:12px; padding:18px; width:90%; max-width:420px; box-shadow:0 10px 30px rgba(2,8,23,0.12);">
+    <h3 style="margin:0 0 8px; font-size:18px;">Add Funds</h3>
+    <p class="small" style="margin:0 0 12px;">Choose an amount or enter a custom value (NGN)</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="preset-amt btn-ghost" data-amt="500">₦500</button>
+      <button class="preset-amt btn-ghost" data-amt="1000">₦1,000</button>
+      <button class="preset-amt btn-ghost" data-amt="2000">₦2,000</button>
+      <button class="preset-amt btn-ghost" data-amt="5000">₦5,000</button>
+    </div>
+    <input id="customAmount" type="number" min="50" placeholder="Custom amount (min ₦50)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0; margin-bottom:12px;">
+    <div style="display:flex;gap:8px">
+      <button id="payNowBtn" class="btn-primary" style="flex:1">Pay Now</button>
+      <button id="cancelPayBtn" class="btn-ghost" style="flex:1">Cancel</button>
+    </div>
+    <div id="modalError" class="small" style="color:#ef4444; margin-top:10px; display:none;"></div>
+  </div>
+</div>
+
       </div>
 
       <div class="col box">
@@ -195,6 +215,84 @@
   // -----------------------
   // Paystack flow: Add Fund
   // -----------------------
+  // -----------------------
+  // Paystack flow: Add Fund (modal UI)
+  // -----------------------
+  async function loadPaystackScript(){
+    if(window.PaystackPop) return;
+    return new Promise((res, rej)=>{
+      const s = document.createElement('script');
+      s.src = 'https://js.paystack.co/v1/inline.js';
+      s.onload = res; s.onerror = rej;
+      document.body.appendChild(s);
+    });
+  }
+
+  // modal elements
+  const addFundModal = document.getElementById('addFundModal');
+  const payNowBtn = document.getElementById('payNowBtn');
+  const cancelPayBtn = document.getElementById('cancelPayBtn');
+  const customAmountInput = document.getElementById('customAmount');
+  const modalError = document.getElementById('modalError');
+
+  document.getElementById('addFundBtn').addEventListener('click', ()=> {
+    modalError.style.display = 'none';
+    customAmountInput.value = '';
+    addFundModal.style.display = 'flex';
+    window.scrollTo(0,0);
+  });
+
+  // preset amount buttons
+  document.querySelectorAll('.preset-amt').forEach(btn => {
+    btn.addEventListener('click', ()=> {
+      document.querySelectorAll('.preset-amt').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      customAmountInput.value = btn.getAttribute('data-amt');
+    });
+  });
+
+  cancelPayBtn.addEventListener('click', ()=> {
+    addFundModal.style.display = 'none';
+  });
+
+  payNowBtn.addEventListener('click', async ()=> {
+    modalError.style.display = 'none';
+    let amount = Number(customAmountInput.value);
+    if (!amount || amount < 50) {
+      modalError.textContent = 'Please enter an amount of at least ₦50';
+      modalError.style.display = 'block';
+      return;
+    }
+    try{
+      const createRes = await fetch('/.netlify/functions/create-transaction', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ userId: uid, amount }) // amount in NGN
+      });
+      const createData = await createRes.json();
+      if(createRes.status !== 200){ console.error(createData); modalError.textContent = (createData && createData.error) ? createData.error : 'Could not initiate payment'; modalError.style.display='block'; return; }
+      const { reference, checkoutUrl, authorization_url, publicKey, status, data } = createData;
+
+      // Try to get checkout URL in different fields
+      const url = createData.checkoutUrl || createData.authorization_url || (createData.data && createData.data.authorization_url) || createData.authorizationUrl;
+      // save reference for verify
+      if(reference) localStorage.setItem('pendingRef', reference);
+      if(url){
+        // open paystack in new tab
+        window.open(url, '_blank');
+        addFundModal.style.display = 'none';
+        alert('Payment page opened. After payment, click "Verify Payment" to confirm.');
+      } else {
+        modalError.textContent = 'Payment URL not returned.';
+        modalError.style.display = 'block';
+      }
+    }catch(err){
+      console.error(err);
+      modalError.textContent = err.message || 'Payment initiation failed';
+      modalError.style.display = 'block';
+    }
+  });
+
   async function loadPaystackScript(){
     if(window.PaystackPop) return;
     return new Promise((res, rej)=>{
