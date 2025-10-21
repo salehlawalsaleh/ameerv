@@ -320,19 +320,110 @@ function showVerifyNotification({ title='Notification', desc='', type='success',
   setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(), 300); }, timeout);
 }
 
-/* ========== Balance & History functions ========== */
-async function updateBalance() {
-  if (!userId) return;
+/* ===== Helpers: normalize + format amounts (handles Paystack kobo heuristic) ===== */
+function formatAmountRaw(raw) {
+  if (raw === undefined || raw === null || raw === '') return NaN;
+  const n = Number(raw);
+  return isNaN(n) ? NaN : n;
+}
+
+function toCurrency(n) {
+  if (n === null || n === undefined || isNaN(Number(n))) return '';
   try {
-    const res = await fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}.json`);
-    const data = await res.json();
-    document.getElementById("balance").innerText = data?.balance || 0;
-  } catch {
-    document.getElementById("balance").innerText = "0";
+    const f = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
+    return f.format(Math.round(Number(n)));
+  } catch (e) {
+    return `₦${Math.round(Number(n))}`;
   }
 }
 
-// load history but keep it hidden until user opens it
+function normalizeTx(tx) {
+  const t = Object.assign({}, tx);
+
+  // common amount fallbacks
+  const rawAmt = t.amount ?? t.value ?? (t.data && (t.data.amount || t.data.amount_paid)) ?? t.amount_paid ?? t.amt;
+  const amtNum = formatAmountRaw(rawAmt);
+
+  // detect paystack-ish: check common keys for gateway/provider
+  const sourceHint = (t.source || t.gateway || t.provider || t.paymentProvider || (t.data && (t.data.gateway || t.data.provider)) || '').toString().toLowerCase();
+  t._isPaystack = sourceHint.includes('paystack') || sourceHint.includes('paystack_ng') || sourceHint.includes('paystack_com');
+
+  // Paystack often stores amount in kobo — heuristic: if marked paystack and amount >=100 and divisible by 100 -> divide by 100
+  t._rawAmount = isNaN(amtNum) ? null : amtNum;
+  if (t._rawAmount !== null) {
+    if (t._isPaystack && Math.abs(t._rawAmount) >= 100 && Math.round(t._rawAmount) % 100 === 0) {
+      t._amount = t._rawAmount / 100;
+    } else {
+      t._amount = t._rawAmount;
+    }
+  } else {
+    t._amount = null;
+  }
+
+  // normalize timestamp candidates
+  const tsCandidates = [t.timestamp, t.createdAt, t.verifiedAt, t.date, t.time, t._ts];
+  const foundTs = tsCandidates.find(x => x !== undefined && x !== null);
+  t._ts = foundTs ? new Date(foundTs).getTime() : Date.now();
+
+  // normalize type/status/action
+  t._type = (t.type || t.direction || '').toString().toLowerCase();
+  t._action = (t.action || '').toString().toLowerCase();
+  t._status = (t.status || t.state || (t.data && (t.data.status || t.data.gateway_status)) || '').toString().toLowerCase();
+
+  // friendly date label
+  try { t._labelWhen = new Date(t._ts).toLocaleString(); } catch(e) { t._labelWhen = String(t._ts); }
+  return t;
+}
+
+/* ===== Render helper ===== */
+function renderHistoryList(txs, container) {
+  if (!txs || txs.length === 0) {
+    container.innerHTML = "No transactions yet.";
+    return;
+  }
+
+  container.innerHTML = txs.map(tx => {
+    const amountDisplay = (tx._amount !== null && tx._amount !== undefined) ? toCurrency(tx._amount) :
+                          (tx._rawAmount !== null && tx._rawAmount !== undefined ? toCurrency(tx._rawAmount) : '');
+
+    const statusRaw = (tx._status || '').toLowerCase();
+    let statusClass = 'status-debit';
+    let statusLabel = (tx.status || tx.state || '').toString().toUpperCase() || (tx._action ? tx._action.toUpperCase() : 'TX');
+
+    if (statusRaw === 'success' || statusRaw === 'verified' || statusRaw === 'completed') {
+      statusClass = 'status-success';
+      statusLabel = 'SUCCESS';
+    } else if (statusRaw === 'pending' || statusRaw === 'processing') {
+      statusClass = 'status-pending';
+      statusLabel = 'PENDING';
+    } else if (tx._type === 'credit' || (tx._amount !== null && Number(tx._amount) > 0 && (tx._action === 'credit' || tx._type === 'credit'))) {
+      statusClass = 'status-success';
+      statusLabel = 'CREDIT';
+    } else if (tx._type === 'debit' || (tx._amount !== null && Number(tx._amount) < 0)) {
+      statusClass = 'status-debit';
+      statusLabel = 'DEBIT';
+    } else {
+      statusClass = 'status-debit';
+      statusLabel = (tx._action || tx._type || 'TX').toString().toUpperCase();
+    }
+
+    const ninInfo = tx.nin ? `<div class="tx-extra">NIN: ${String(tx.nin)}</div>` : '';
+    const actionInfo = tx.action ? `<div class="tx-extra">Action: ${tx.action}</div>` : '';
+    const ref = tx.reference || tx.ref || tx.id || (tx.data && (tx.data.reference || tx.data.id)) || '';
+
+    return `
+      <div class="history-item" data-ref="${ref}">
+        <strong>${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
+        <small class="tx-meta">${tx._labelWhen}</small>
+        ${ninInfo}
+        ${actionInfo}
+        ${ref ? `<div class="tx-extra">Ref: ${ref}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+/* ===== New loadHistory: fetch both locations, merge, normalize, show ALL txs (including Paystack) ===== */
 async function loadHistory() {
   const historyDiv = document.getElementById("history");
   if (!userId) {
@@ -341,9 +432,6 @@ async function loadHistory() {
   }
   historyDiv.innerHTML = "Loading...";
   try {
-    // fetch both possible locations:
-    // 1) old structure: /transactions/{userId}
-    // 2) ni.html structure: /users/{userId}/transactions
     const [res1, res2] = await Promise.all([
       fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`),
       fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}/transactions.json`)
@@ -351,74 +439,24 @@ async function loadHistory() {
     const data1 = await res1.json().catch(()=>null);
     const data2 = await res2.json().catch(()=>null);
 
-    const txs1 = data1 ? Object.values(data1) : [];
-    const txs2 = data2 ? Object.values(data2) : [];
+    const txs1 = data1 ? (Array.isArray(data1) ? data1 : Object.values(data1)) : [];
+    const txs2 = data2 ? (Array.isArray(data2) ? data2 : Object.values(data2)) : [];
 
-    // merge and sort reverse-chronological by timestamp/createdAt fields if available
-    const merged = [...txs1, ...txs2].map(tx => {
-      // normalize timestamp for sorting
-      const ts = tx.timestamp || tx.createdAt || tx.verifiedAt || tx.date || Date.now();
-      return { ...tx, _ts: new Date(ts).getTime() || Date.now() };
-    }).sort((a,b)=> b._ts - a._ts);
+    // merge, normalize, sort reverse-chronological
+    const merged = [...txs1, ...txs2].map(normalizeTx).sort((a,b) => b._ts - a._ts);
 
-    // Filter: only show DEBIT transactions (include generate action from ni.html)
-    const debitTxs = merged.filter(tx => {
-      try {
-        const type = (tx.type || tx.direction || tx.action || '').toString().toLowerCase();
-        const isDebitFlag = tx.isDebit === true || tx.is_debit === true;
-        const amountNegative = tx.amount !== undefined && !isNaN(Number(tx.amount)) && Number(tx.amount) < 0;
-        return type === 'debit' || isDebitFlag || amountNegative || type === 'generate';
-      } catch (e) {
-        return false;
-      }
-    });
-
-    if (!debitTxs || debitTxs.length === 0) {
-      historyDiv.innerHTML = "No debit transactions.";
+    if (!merged || merged.length === 0) {
+      historyDiv.innerHTML = "No transactions yet.";
       return;
     }
 
-    historyDiv.innerHTML = debitTxs.map(tx => {
-      const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
-      let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
-      let statusClass = '';
-
-      if (statusRaw === 'success' || statusRaw === 'verified') {
-        statusClass = 'status-success';
-        statusLabel = 'SUCCESS';
-      } else if (statusRaw === 'pending') {
-        statusClass = 'status-pending';
-        statusLabel = 'PENDING';
-      } else {
-        // if it's a debit/generate but not success/pending => mark as debit (red)
-        statusClass = 'status-debit';
-        statusLabel = (tx.action ? (tx.action.toString().toUpperCase()) : (tx.status || 'DEBIT').toString().toUpperCase());
-      }
-
-      const when = new Date(tx.createdAt || tx.timestamp || tx.verifiedAt || Date.now()).toLocaleString();
-      const amountDisplay = (tx.amount !== undefined && tx.amount !== null) ? tx.amount : (tx.value || '');
-
-      // include NIN info if present (from ni.html records)
-      const ninInfo = tx.nin ? `<div class="tx-extra">NIN: ${String(tx.nin)}</div>` : '';
-      const actionInfo = tx.action ? `<div class="tx-extra">Action: ${tx.action}</div>` : '';
-
-      return `
-        <div class="history-item">
-          <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
-          <small class="tx-meta">${when}</small>
-          ${ninInfo}
-          ${actionInfo}
-        </div>
-      `;
-    }).join('');
+    // render all transactions (not only debit)
+    renderHistoryList(merged, historyDiv);
   } catch (err) {
     console.error(err);
     historyDiv.innerHTML = "Failed to load history.";
   }
 }
-
-// initial balance load
-updateBalance();
 
 /* ========== VERIFY function used by manual button and auto-on-enter/focus ========== */
 async function runVerify(reference) {
@@ -441,24 +479,41 @@ async function runVerify(reference) {
     verifyBtn.innerText = prevText;
 
     if (data.status === "ok") {
-      // success
+      // success: update balance & history first
       localStorage.removeItem("ref");
-      updateBalance();
-      if (document.getElementById('history').style.display === 'block') loadHistory();
+      await updateBalance();
+      if (document.getElementById('history').style.display === 'block') await loadHistory();
 
-      // show modern verify notification (custom)
+      // COMPLETE toast (green) - uses your existing CSS .verify-toast.success
+      const amountFromRes = data.amount || (data.data && (data.data.amount || data.data.amount_paid)) || '';
+      // normalize amount if paystack-like (data.data.amount may be in kobo); best-effort conversion:
+      let amtText = '';
+      try {
+        let amtNum = amountFromRes !== '' ? Number(amountFromRes) : NaN;
+        if (!isNaN(amtNum) && amtNum !== 0) {
+          // if looks like kobo (>=100 and divisible by 100) convert
+          if (Math.abs(amtNum) >= 100 && Math.round(amtNum) % 100 === 0) amtNum = amtNum / 100;
+          amtText = `₦${Math.round(amtNum).toLocaleString()}`;
+        }
+      } catch(e){ amtText = ''; }
+
+      const refText = reference || data.reference || (data.data && (data.data.reference || data.data.id)) || '';
+      const descParts = [];
+      if (amtText) descParts.push(amtText);
+      if (refText) descParts.push(`Ref: ${refText}`);
+      const desc = descParts.length ? descParts.join(' — ') : 'Transaction completed successfully.';
+
       showVerifyNotification({
-        title: 'Payment verified',
-        desc: 'Your payment was verified and your balance updated.',
+        title: 'Complete',
+        desc,
         type: 'success',
-        timeout: 5000,
+        timeout: 6000,
         actions: [{ label: 'View history', action: 'view-history', primary: true }]
       });
 
       return { ok: true, data };
     } else {
-      // not successful yet
-      // show friendly non-blocking notification for pending
+      // pending or not verified yet
       showVerifyNotification({
         title: 'Verification pending',
         desc: (data.error || 'Payment not verified yet. Try again after a while.'),
