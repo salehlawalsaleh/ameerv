@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -119,32 +120,32 @@ button[disabled] { opacity: 0.6; cursor: not-allowed; }
 
 /* === Toast styles (minimal modern) === */
 #toast-container {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-end;
-  pointer-events: none;
+position: fixed;
+right: 20px;
+bottom: 20px;
+z-index: 2000;
+display: flex;
+flex-direction: column;
+gap: 10px;
+align-items: flex-end;
+pointer-events: none;
 }
 .toast {
-  min-width: 220px;
-  max-width: 360px;
-  background: #ffffff;
-  color: #0f172a;
-  padding: 12px 14px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.12);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-size: 0.95rem;
-  pointer-events: auto;
-  border-left: 4px solid transparent;
-  transform-origin: 100% 100%;
-  animation: toast-in 260ms ease-out;
+min-width: 220px;
+max-width: 360px;
+background: #ffffff;
+color: #0f172a;
+padding: 12px 14px;
+border-radius: 10px;
+box-shadow: 0 6px 18px rgba(2,6,23,0.12);
+display: flex;
+gap: 12px;
+align-items: center;
+font-size: 0.95rem;
+pointer-events: auto;
+border-left: 4px solid transparent;
+transform-origin: 100% 100%;
+animation: toast-in 260ms ease-out;
 }
 .toast .icon { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 18px; }
 .toast.info { border-left-color: #0ea5e9; }
@@ -162,248 +163,412 @@ button[disabled] { opacity: 0.6; cursor: not-allowed; }
 
   </style>
 </head>
-<body><header>9jame Dashboard</header><div class="container">
-  <h2 id="welcomeText">Welcome, Guest</h2>
-  <p id="userIdText">User ID: -</p>  <div class="balance-box">
-    <p>Available Balance:</p>
-    <p class="balance-amount">₦<span id="balance">0</span></p>
-  </div><button id="addFundBtn">Add Fund</button> <button id="verifyBtn" class="green-btn">Verify Payment</button>
+<body>
+  <header>
+    9jame Dashboard
+    <!-- Sign out button (user asked to add) -->
+    <button id="logoutBtn" class="green-btn" style="margin-left:12px;">Sign out</button>
+  </header>
 
-  <hr style="margin:20px 0;">  <h3 style="margin-bottom:6px;">Transaction History</h3>
-  <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
-  <div id="history" class="history" aria-hidden="true">Loading...</div>  <hr style="margin:20px 0;">  <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
-  <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>  <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
-</div><!-- Add Fund Modal --><div id="fundModal">
-  <div class="modal-content">
-    <h3>Add Fund</h3>
-    <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
-    <div>
-      <button id="payNowBtn">Pay Now</button>
-      <button id="cancelBtn" class="gray-btn">Cancel</button>
+  <div class="container">
+    <h2 id="welcomeText">Welcome, Guest</h2>
+    <p id="userIdText">User ID: -</p>
+
+    <div class="balance-box">
+      <p>Available Balance:</p>
+      <p class="balance-amount">₦<span id="balance">0</span></p>
+    </div>
+
+    <button id="addFundBtn">Add Fund</button>
+    <button id="verifyBtn" class="green-btn">Verify Payment</button>
+
+    <hr style="margin:20px 0;">
+
+    <h3 style="margin-bottom:6px;">Transaction History</h3>
+    <button id="historyToggleBtn" class="history-toggle" aria-expanded="false">View History</button>
+    <div id="history" class="history" aria-hidden="true">Loading...</div>
+
+    <hr style="margin:20px 0;">
+
+    <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
+    <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
+
+    <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
+  </div>
+
+  <!-- Add Fund Modal -->
+  <div id="fundModal">
+    <div class="modal-content">
+      <h3>Add Fund</h3>
+      <input type="number" id="fundAmount" placeholder="Enter amount (₦)" />
+      <div>
+        <button id="payNowBtn">Pay Now</button>
+        <button id="cancelBtn" class="gray-btn">Cancel</button>
+      </div>
     </div>
   </div>
-</div><footer>
-  <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
-  <p>Design by <strong>Atech ICT Solution</strong></p>
-</footer><!-- Toast container --><div id="toast-container" aria-live="polite" aria-atomic="true"></div><script>
-const baseURL = "https://9jame.netlify.app/.netlify/functions";
-const FIREBASE_DB_URL = "https://ameernin-ba310-default-rtdb.firebaseio.com";
 
-let userId = null;
-let username = null;
+  <footer>
+    <p>Need help? <a href="https://wa.me/2348145415083" target="_blank" rel="noopener">Contact Support</a></p>
+    <p>Design by <strong>Atech ICT Solution</strong></p>
+  </footer>
 
-/* ===== Modern toast utility (used to replace alert) ===== */
-function showToast(message, type = "info", duration = 3500) {
-  try {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+  <!-- Toast container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-    const icon = document.createElement('div');
-    icon.className = 'icon';
-    icon.innerText = type === 'success' ? '✓' : (type === 'error' ? '!' : 'i');
+  <script type="module">
+    /* ======= Configuration ======= */
+    const baseURL = "https://9jame.netlify.app/.netlify/functions";
 
-    const content = document.createElement('div');
-    content.className = 'content';
-    content.innerText = message;
+    // Firebase config (same as your auth page)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDc0bIipHU7N73mju33dNwSWmH3IeIYkog",
+      authDomain: "ameernin-ba310.firebaseapp.com",
+      databaseURL: "https://ameernin-ba310-default-rtdb.firebaseio.com",
+      projectId: "ameernin-ba310",
+      storageBucket: "ameernin-ba310.appspot.com",
+      messagingSenderId: "522206845073",
+      appId: "1:522206845073:web:3c85714bd7eda6c1048730",
+    };
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'close-btn';
-    closeBtn.setAttribute('aria-label', 'Close notification');
-    closeBtn.innerText = '×';
-    closeBtn.onclick = () => removeToast(toast);
+    /* ======= Toast utility (same design) ======= */
+    function showToast(message, type = "info", duration = 3500) {
+      try {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
 
-    toast.appendChild(icon);
-    toast.appendChild(content);
-    toast.appendChild(closeBtn);
+        const icon = document.createElement('div');
+        icon.className = 'icon';
+        icon.innerText = type === 'success' ? '✓' : (type === 'error' ? '!' : 'i');
 
-    container.appendChild(toast);
+        const content = document.createElement('div');
+        content.className = 'content';
+        content.innerText = message;
 
-    const timeoutId = setTimeout(() => { removeToast(toast); }, duration);
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.setAttribute('aria-label', 'Close notification');
+        closeBtn.innerText = '×';
+        closeBtn.onclick = () => removeToast(toast);
 
-    toast.addEventListener('click', (e) => { if (e.target !== closeBtn) removeToast(toast); clearTimeout(timeoutId); });
+        toast.appendChild(icon);
+        toast.appendChild(content);
+        toast.appendChild(closeBtn);
 
-    function removeToast(el) {
-      el.style.animation = 'toast-out 200ms ease-in';
-      el.style.opacity = '0';
-      setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 220);
+        container.appendChild(toast);
+
+        const timeoutId = setTimeout(() => { removeToast(toast); }, duration);
+
+        toast.addEventListener('click', (e) => { if (e.target !== closeBtn) removeToast(toast); clearTimeout(timeoutId); });
+
+        function removeToast(el) {
+          el.style.animation = 'toast-out 200ms ease-in';
+          el.style.opacity = '0';
+          setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 220);
+        }
+      } catch (err) { console.error('toast error', err); }
     }
-  } catch (err) { console.error('toast error', err); }
-}
 
-try {
-  const stored = localStorage.getItem('user');
-  if (stored) {
-    const obj = JSON.parse(stored);
-    if (obj && obj.userId) { userId = obj.userId; username = obj.username || obj.email || "User"; }
-  }
-} catch {}
+    /* ======= Firebase imports & init ======= */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getDatabase,
+      ref as dbRef,
+      get,
+      set as dbSet
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-if (!userId) {
-  const uid = localStorage.getItem('userId');
-  const uname = localStorage.getItem('username');
-  if (uid) userId = uid;
-  if (uname) username = uname;
-}
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
 
-if (!userId) {
-  showToast("Please log in to access the dashboard.", "error");
-  // keep redirect but allow toast to show briefly
-  setTimeout(() => { window.location.href = "index.html"; }, 700);
-} else {
-  document.getElementById("welcomeText").innerText = `Welcome, ${username || 'User'}`;
-  document.getElementById("userIdText").innerText = `User ID: ${userId}`;
-}
+    /* ======= DOM elements ======= */
+    const welcomeText = document.getElementById("welcomeText");
+    const userIdText = document.getElementById("userIdText");
+    const balanceEl = document.getElementById("balance");
+    const historyDiv = document.getElementById("history");
+    const fundModal = document.getElementById("fundModal");
+    const addFundBtn = document.getElementById("addFundBtn");
+    const payNowBtn = document.getElementById("payNowBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const verifyBtn = document.getElementById("verifyBtn");
+    const historyToggleBtn = document.getElementById("historyToggleBtn");
+    const getNINBtn = document.getElementById("getNINBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-// Balance
-async function updateBalance() {
-  if (!userId) return;
-  try {
-    const res = await fetch(`${FIREBASE_DB_URL}/users/${encodeURIComponent(userId)}.json`);
-    const data = await res.json();
-    document.getElementById("balance").innerText = data?.balance || 0;
-  } catch { document.getElementById("balance").innerText = "0"; }
-}
+    /* ======= State ======= */
+    let currentUid = null;
+    let currentUsername = null;
 
-// History
-async function loadHistory() {
-  const historyDiv = document.getElementById("history");
-  if (!userId) { historyDiv.innerHTML = "No user."; return; }
-  historyDiv.innerHTML = "Loading...";
-  try {
-    const res = await fetch(`${FIREBASE_DB_URL}/transactions/${encodeURIComponent(userId)}.json`);
-    const data = await res.json();
-    if (!data) { historyDiv.innerHTML = "No transactions yet."; return; }
-    const txs = Object.values(data).reverse();
+    /* ======= Helpers ======= */
+    async function fetchUserRecord(uid) {
+      try {
+        const snap = await get(dbRef(db, `users/${uid}`));
+        return snap.exists() ? snap.val() : null;
+      } catch (err) {
+        console.error('fetchUserRecord error', err);
+        return null;
+      }
+    }
 
-    historyDiv.innerHTML = txs.map(tx => {
-      const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
-      let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
-      let statusClass = '';
-      if (statusRaw === 'success' || statusRaw === 'verified') { statusClass = 'status-success'; statusLabel = 'SUCCESS'; }
-      else if (statusRaw === 'pending') { statusClass = 'status-pending'; statusLabel = 'PENDING'; }
-      const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();
-      const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');
-      return `
-        <div class="history-item">
-          <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
-          <small>${when}</small>
-        </div>
-      `;
-    }).join('');
-  } catch (err) { console.error(err); historyDiv.innerHTML = "Failed to load history."; }
-}
+    async function writeUserRecordIfMissing(uid, record) {
+      try {
+        await dbSet(dbRef(db, `users/${uid}`), record);
+        return true;
+      } catch (err) {
+        console.error('writeUserRecordIfMissing error', err);
+        return false;
+      }
+    }
 
-updateBalance();
+    /* ======= Auth observer ======= */
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Not logged in → clear local and redirect to login
+        currentUid = null;
+        currentUsername = null;
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        showToast("Not logged in. Redirecting to login...", "info", 1200);
+        setTimeout(() => { window.location.href = "index.html"; }, 900);
+        return;
+      }
 
-// Verify
-async function runVerify(reference) {
-  if (!userId || !reference) return { ok: false, message: "No reference or user." };
-  const verifyBtn = document.getElementById('verifyBtn');
-  const prevText = verifyBtn.innerText;
-  verifyBtn.disabled = true;
-  verifyBtn.innerText = 'Verifying...';
-  try {
-    const res = await fetch(`${baseURL}/verify-transaction`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reference, userId })
+      // Signed in
+      currentUid = user.uid;
+      currentUsername = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+
+      // persist local copy for compatibility with existing code
+      const userDataForLocal = { userId: currentUid, username: currentUsername, email: user.email || '' };
+      localStorage.setItem('user', JSON.stringify(userDataForLocal));
+      localStorage.setItem('userId', currentUid);
+      localStorage.setItem('username', currentUsername);
+
+      // Update UI
+      welcomeText.innerText = `Welcome, ${currentUsername}`;
+      userIdText.innerText = `User ID: ${currentUid}`;
+
+      // ensure DB record exists
+      const dbUser = await fetchUserRecord(currentUid);
+      if (!dbUser) {
+        await writeUserRecordIfMissing(currentUid, {
+          name: currentUsername,
+          email: user.email || '',
+          balance: 0,
+          demoCount: 0,
+          createdAt: Date.now()
+        });
+        balanceEl.innerText = 0;
+      } else {
+        // Sync name from auth -> DB if different (optional behaviour)
+        if (user.displayName && dbUser.name !== user.displayName) {
+          try {
+            await dbSet(dbRef(db, `users/${currentUid}/name`), user.displayName);
+          } catch (e) { console.warn('Could not sync DB name from auth', e); }
+        }
+        balanceEl.innerText = (dbUser.balance ?? 0);
+      }
+
+      // If history visible, load it
+      if (historyDiv.style.display === 'block') loadHistory();
+
+      // try auto-verify pending ref if any
+      tryAutoVerifyOnce();
     });
-    const data = await res.json();
-    verifyBtn.disabled = false;
-    verifyBtn.innerText = prevText;
-    if (data.status === "ok") {
-      localStorage.removeItem("ref");
+
+    /* ======= Balance & History ======= */
+    async function updateBalance() {
+      if (!currentUid) return;
+      const dbUser = await fetchUserRecord(currentUid);
+      balanceEl.innerText = (dbUser?.balance ?? 0);
+    }
+
+    async function loadHistory() {
+      historyDiv.innerHTML = "Loading...";
+      if (!currentUid) { historyDiv.innerHTML = "No user."; return; }
+      try {
+        const snap = await get(dbRef(db, `transactions/${currentUid}`));
+        if (!snap.exists()) { historyDiv.innerHTML = "No transactions yet."; return; }
+        const data = snap.val();
+        const txs = Object.values(data).reverse();
+        historyDiv.innerHTML = txs.map(tx => {
+          const statusRaw = (tx.status || tx.state || '').toString().toLowerCase();
+          let statusLabel = (tx.status || '').toString().toUpperCase() || 'UNKNOWN';
+          let statusClass = '';
+          if (statusRaw === 'success' || statusRaw === 'verified') { statusClass = 'status-success'; statusLabel = 'SUCCESS'; }
+          else if (statusRaw === 'pending') { statusClass = 'status-pending'; statusLabel = 'PENDING'; }
+          const when = new Date(tx.createdAt || tx.verifiedAt || Date.now()).toLocaleString();
+          const amountDisplay = (tx.amount !== undefined) ? tx.amount : (tx.value || '');
+          return `
+            <div class="history-item">
+              <strong>₦${amountDisplay}</strong> - <span class="${statusClass}">${statusLabel}</span><br>
+              <small>${when}</small>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('loadHistory error', err);
+        historyDiv.innerHTML = "Failed to load history.";
+      }
+    }
+
+    /* ======= Verify ======= */
+    async function runVerify(reference) {
+      if (!currentUid || !reference) return { ok: false, message: "No reference or user." };
+      const prevText = verifyBtn.innerText;
+      verifyBtn.disabled = true;
+      verifyBtn.innerText = 'Verifying...';
+      try {
+        const res = await fetch(`${baseURL}/verify-transaction`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference, userId: currentUid })
+        });
+        const data = await res.json();
+        verifyBtn.disabled = false;
+        verifyBtn.innerText = prevText;
+        if (data.status === "ok") {
+          localStorage.removeItem("ref");
+          await updateBalance();
+          if (historyDiv.style.display === 'block') await loadHistory();
+          return { ok: true, data };
+        } else return { ok: false, data };
+      } catch (err) {
+        console.error('verify error', err);
+        verifyBtn.disabled = false;
+        verifyBtn.innerText = prevText;
+        return { ok: false, error: err };
+      }
+    }
+
+    async function tryAutoVerifyOnce() {
+      if (!currentUid) return;
+      const ref = localStorage.getItem('ref');
+      if (!ref) return;
+      try {
+        const result = await runVerify(ref);
+        if (result.ok) { showToast("Payment verified automatically — balance updated.", "success"); }
+        else console.log('Auto-verify attempted; not yet verified.', result);
+      } catch (e) { console.error('Auto-verify failure', e); }
+    }
+
+    /* ======= Window focus updates ======= */
+    window.addEventListener('focus', () => {
       updateBalance();
-      if (document.getElementById('history').style.display === 'block') loadHistory();
-      return { ok: true, data };
-    } else return { ok: false, data };
-  } catch (err) {
-    console.error('verify error', err);
-    verifyBtn.disabled = false;
-    verifyBtn.innerText = prevText;
-    return { ok: false, error: err };
-  }
-}
+      if (historyDiv.style.display === 'block') loadHistory();
+      tryAutoVerifyOnce();
+    });
 
-// Auto-verify once
-async function tryAutoVerifyOnce() {
-  if (!userId) return;
-  const ref = localStorage.getItem('ref');
-  if (!ref) return;
-  try {
-    const result = await runVerify(ref);
-    if (result.ok) { try { showToast("Payment verified automatically — balance updated.", "success"); } catch {} }
-    else console.log('Auto-verify attempted; not yet verified.', result);
-  } catch (e) { console.error('Auto-verify failure', e); }
-}
+    /* ======= History toggle ======= */
+    historyToggleBtn.addEventListener('click', async () => {
+      const isOpen = historyDiv.style.display === 'block';
+      if (isOpen) {
+        historyDiv.style.display = 'none';
+        historyDiv.setAttribute('aria-hidden', 'true');
+        historyToggleBtn.setAttribute('aria-expanded', 'false');
+        historyToggleBtn.innerText = 'View History';
+      } else {
+        historyDiv.style.display = 'block';
+        historyDiv.setAttribute('aria-hidden', 'false');
+        historyToggleBtn.setAttribute('aria-expanded', 'true');
+        historyToggleBtn.innerText = 'Hide History';
+        await loadHistory();
+      }
+    });
 
-tryAutoVerifyOnce();
+    /* ======= Modal handlers ======= */
+    addFundBtn.onclick = () => { if (!currentUid) { showToast("Please log in to add funds.", "error"); return; } fundModal.style.display = "flex"; };
+    cancelBtn.onclick = () => fundModal.style.display = "none";
 
-window.addEventListener('focus', () => {
-  updateBalance();
-  if (document.getElementById('history').style.display === 'block') loadHistory();
-  tryAutoVerifyOnce();
-});
+    /* ======= Create transaction (Add Fund) ======= */
+    payNowBtn.onclick = async () => {
+      if (!currentUid) { showToast("Please log in to add funds.", "error"); return; }
+      const amount = parseInt(document.getElementById("fundAmount").value);
+      if (!amount || amount < 50) { showToast("Please enter at least ₦50", "error"); return; }
+      fundModal.style.display = "none";
 
-// History toggle
-const historyToggleBtn = document.getElementById('historyToggleBtn');
-historyToggleBtn.addEventListener('click', async () => {
-  const historyDiv = document.getElementById('history');
-  const isOpen = historyDiv.style.display === 'block';
-  if (isOpen) {
-    historyDiv.style.display = 'none';
-    historyDiv.setAttribute('aria-hidden', 'true');
-    historyToggleBtn.setAttribute('aria-expanded', 'false');
-    historyToggleBtn.innerText = 'View History';
-  } else {
-    historyDiv.style.display = 'block';
-    historyDiv.setAttribute('aria-hidden', 'false');
-    historyToggleBtn.setAttribute('aria-expanded', 'true');
-    historyToggleBtn.innerText = 'Hide History';
-    await loadHistory();
-  }
-});
+      try {
+        const res = await fetch(`${baseURL}/create-transaction`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: currentUid, amount })
+        });
 
-// Modal
-const fundModal = document.getElementById("fundModal");
-document.getElementById("addFundBtn").onclick = () => fundModal.style.display = "flex";
-document.getElementById("cancelBtn").onclick = () => fundModal.style.display = "none";
+        if (!res.ok) {
+          const txt = await res.text();
+          showToast("Server error creating transaction: " + txt, "error");
+          console.error('create-transaction non-OK', res.status, txt);
+          return;
+        }
 
-document.getElementById("payNowBtn").onclick = async () => {
-  if (!userId) { showToast("Please log in to add funds.", "error"); return; }
-  const amount = parseInt(document.getElementById("fundAmount").value);
-  if (!amount || amount < 50) { showToast("Please enter at least ₦50", "error"); return; }
-  fundModal.style.display = "none";
-  const res = await fetch(`${baseURL}/create-transaction`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, amount })
-  });
-  const data = await res.json();
-  if (data.checkoutUrl) {
-    localStorage.setItem("ref", data.reference);
-    window.open(data.checkoutUrl, "_blank");
-    showToast("Payment page opened. After payment, you can return to dashboard and verification will run automatically once, or click Verify.", "info");
-  } else showToast("Error: " + (data.error || JSON.stringify(data)), "error");
-};
+        const data = await res.json();
+        if (data.checkoutUrl) {
+          localStorage.setItem("ref", data.reference || "");
+          const newWin = window.open(data.checkoutUrl, "_blank");
+          if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+            // popup likely blocked — navigate current tab
+            window.location.href = data.checkoutUrl;
+          }
+          showToast("Payment page opened. After payment, return to dashboard and verify.", "info");
+        } else {
+          showToast("Error: " + (data.error || JSON.stringify(data)), "error");
+          console.error('create-transaction response', data);
+        }
+      } catch (err) {
+        console.error('create-transaction fetch error', err);
+        showToast("Network error creating transaction. Check console.", "error");
+      }
+    };
 
-// Manual verify
-document.getElementById("verifyBtn").onclick = async () => {
-  if (!userId) { showToast("Please log in to verify payments.", "error"); return; }
-  const ref = localStorage.getItem("ref");
-  if (!ref) { showToast("No pending transaction to verify.", "info"); return; }
-  const result = await runVerify(ref);
-  if (result.ok) {
-    showToast("Payment verified successfully! Balance updated.", "success");
-    localStorage.removeItem("ref");
-    updateBalance();
-    if (document.getElementById('history').style.display === 'block') loadHistory();
-  } else showToast("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."), "info");
-};
+    /* ======= Manual verify ======= */
+    verifyBtn.onclick = async () => {
+      if (!currentUid) { showToast("Please log in to verify payments.", "error"); return; }
+      const ref = localStorage.getItem("ref");
+      if (!ref) { showToast("No pending transaction to verify.", "info"); return; }
+      const result = await runVerify(ref);
+      if (result.ok) {
+        showToast("Payment verified successfully! Balance updated.", "success");
+        localStorage.removeItem("ref");
+        await updateBalance();
+        if (historyDiv.style.display === 'block') await loadHistory();
+      } else showToast("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."), "info");
+    };
 
-// Get NIN button
-document.getElementById("getNINBtn").onclick = () => { window.location.href = "ni.html"; };
-</script></body>
+    /* ======= Get NIN button (existing) ======= */
+    getNINBtn.onclick = () => { window.location.href = "ni.html"; };
+
+    /* ======= Logout handler ======= */
+    if (logoutBtn) {
+      logoutBtn.onclick = async () => {
+        try {
+          await signOut(auth);
+          localStorage.removeItem('user');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('username');
+          showToast("Logged out.", "info", 1000);
+          setTimeout(() => { window.location.href = 'index.html'; }, 700);
+        } catch (e) {
+          console.error('logout error', e);
+          showToast("Error logging out. Check console.", "error");
+        }
+      };
+    }
+
+    /* ======= Initial safety UI ======= */
+    (function initialState() {
+      welcomeText.innerText = 'Welcome, Guest';
+      userIdText.innerText = 'User ID: -';
+      balanceEl.innerText = '0';
+      historyDiv.innerHTML = 'Loading...';
+    })();
+  </script>
+</body>
 </html>
