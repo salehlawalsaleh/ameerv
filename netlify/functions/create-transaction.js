@@ -21,9 +21,9 @@ export async function handler(event) {
       },
       body: JSON.stringify({
         amount: amount * 100,
-        email: `${userId}@9jame.net`,
+        email: `${userId}@tech.net`,
         // callback now points to dashboard.html (make sure file exists and is deployed)
-        callback_url: `https://9jame.netlify.app/dashboard.html?uid=${encodeURIComponent(userId)}`,
+        callback_url: `https://njame.netlify.app/dashboard.html?uid=${encodeURIComponent(userId)}`,
       }),
     });
 
