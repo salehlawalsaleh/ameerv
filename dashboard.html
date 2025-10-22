@@ -166,7 +166,7 @@ animation: toast-in 260ms ease-out;
 <body>
   <header>
     9jame Dashboard
-    <!-- Sign out button (user asked to add) -->
+    <!-- Sign out button -->
     <button id="logoutBtn" class="green-btn" style="margin-left:12px;">Sign out</button>
   </header>
 
@@ -231,7 +231,7 @@ animation: toast-in 260ms ease-out;
       appId: "1:522206845073:web:3c85714bd7eda6c1048730",
     };
 
-    /* ======= Toast utility (same design) ======= */
+    /* ======= Toast utility ======= */
     function showToast(message, type = "info", duration = 3500) {
       try {
         const container = document.getElementById('toast-container');
@@ -328,35 +328,26 @@ animation: toast-in 260ms ease-out;
       }
     }
 
-    /* ======= Auth observer ======= */
+    /* ======= Auth observer (use ONLY Firebase Auth UID) ======= */
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        // Not logged in → clear local and redirect to login
+        // Not logged in → redirect to login
         currentUid = null;
         currentUsername = null;
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('username');
         showToast("Not logged in. Redirecting to login...", "info", 1200);
         setTimeout(() => { window.location.href = "index.html"; }, 900);
         return;
       }
 
-      // Signed in
+      // Signed in — use auth uid only (no localStorage userId)
       currentUid = user.uid;
       currentUsername = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
-
-      // persist local copy for compatibility with existing code
-      const userDataForLocal = { userId: currentUid, username: currentUsername, email: user.email || '' };
-      localStorage.setItem('user', JSON.stringify(userDataForLocal));
-      localStorage.setItem('userId', currentUid);
-      localStorage.setItem('username', currentUsername);
 
       // Update UI
       welcomeText.innerText = `Welcome, ${currentUsername}`;
       userIdText.innerText = `User ID: ${currentUid}`;
 
-      // ensure DB record exists
+      // ensure DB record exists for this uid
       const dbUser = await fetchUserRecord(currentUid);
       if (!dbUser) {
         await writeUserRecordIfMissing(currentUid, {
@@ -368,7 +359,7 @@ animation: toast-in 260ms ease-out;
         });
         balanceEl.innerText = 0;
       } else {
-        // Sync name from auth -> DB if different (optional behaviour)
+        // optionally sync name from auth -> DB
         if (user.displayName && dbUser.name !== user.displayName) {
           try {
             await dbSet(dbRef(db, `users/${currentUid}/name`), user.displayName);
@@ -380,7 +371,7 @@ animation: toast-in 260ms ease-out;
       // If history visible, load it
       if (historyDiv.style.display === 'block') loadHistory();
 
-      // try auto-verify pending ref if any
+      // attempt auto-verify pending ref if any
       tryAutoVerifyOnce();
     });
 
@@ -491,36 +482,48 @@ animation: toast-in 260ms ease-out;
     /* ======= Create transaction (Add Fund) ======= */
     payNowBtn.onclick = async () => {
       if (!currentUid) { showToast("Please log in to add funds.", "error"); return; }
-      const amount = parseInt(document.getElementById("fundAmount").value);
+      const amount = parseInt(document.getElementById("fundAmount").value, 10);
       if (!amount || amount < 50) { showToast("Please enter at least ₦50", "error"); return; }
       fundModal.style.display = "none";
+
+      const payload = { userId: currentUid, amount };
+      console.log("create-transaction request:", payload);
 
       try {
         const res = await fetch(`${baseURL}/create-transaction`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: currentUid, amount })
+          body: JSON.stringify(payload)
         });
 
+        console.log("create-transaction status:", res.status, res.statusText);
+
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+
         if (!res.ok) {
-          const txt = await res.text();
-          showToast("Server error creating transaction: " + txt, "error");
-          console.error('create-transaction non-OK', res.status, txt);
+          console.error("create-transaction non-OK:", res.status, text);
+          showToast("Server error creating transaction. Check console.", "error");
           return;
         }
 
-        const data = await res.json();
+        if (!data) {
+          console.error("create-transaction returned non-JSON:", text);
+          showToast("Server returned unexpected response. Check console.", "error");
+          return;
+        }
+
         if (data.checkoutUrl) {
           localStorage.setItem("ref", data.reference || "");
           const newWin = window.open(data.checkoutUrl, "_blank");
           if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-            // popup likely blocked — navigate current tab
             window.location.href = data.checkoutUrl;
           }
           showToast("Payment page opened. After payment, return to dashboard and verify.", "info");
         } else {
-          showToast("Error: " + (data.error || JSON.stringify(data)), "error");
-          console.error('create-transaction response', data);
+          console.error("create-transaction payload error:", data);
+          showToast("Error creating payment: " + (data.error || "See console"), "error");
         }
       } catch (err) {
         console.error('create-transaction fetch error', err);
@@ -542,7 +545,7 @@ animation: toast-in 260ms ease-out;
       } else showToast("Verification attempt: " + (result.data?.error || "Not yet verified. Return to dashboard after completing payment or try again."), "info");
     };
 
-    /* ======= Get NIN button (existing) ======= */
+    /* ======= Get NIN button ======= */
     getNINBtn.onclick = () => { window.location.href = "ni.html"; };
 
     /* ======= Logout handler ======= */
@@ -550,9 +553,6 @@ animation: toast-in 260ms ease-out;
       logoutBtn.onclick = async () => {
         try {
           await signOut(auth);
-          localStorage.removeItem('user');
-          localStorage.removeItem('userId');
-          localStorage.removeItem('username');
           showToast("Logged out.", "info", 1000);
           setTimeout(() => { window.location.href = 'index.html'; }, 700);
         } catch (e) {
