@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VerifyMe Dashboard</title>
+  <title>9jame Dashboard</title>
+  <!-- Font Awesome (for icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p1Cm6Y9K6Qe5j7G2y6r6Zg0Qkz1q3b9gkM3Y1P1YJ0gqQ+5x1JZ0+JxjF5rK7qV0J9yLz2bY0pE6v7q1l9Qxw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -14,7 +16,7 @@
       text-align: center;
     }
     header {
-      background: #0f172a; to
+      background: #0f172a;
       color: white;
       padding: 1rem 0;
       font-size: 1.2rem;
@@ -165,9 +167,11 @@ animation: toast-in 260ms ease-out;
 </head>
 <body>
   <header>
-    VerifyMe Dashboard
-    <!-- Sign out button -->
-    <button id="logoutBtn" class="green-btn" style="margin-left:12px;">Sign out</button>
+    9jame Dashboard
+    <!-- Sign out button (icon-only) -->
+    <button id="logoutBtn" class="green-btn" aria-label="Sign out" style="margin-left:12px; padding:8px 10px;">
+      <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+    </button>
   </header>
 
   <div class="container">
@@ -193,7 +197,10 @@ animation: toast-in 260ms ease-out;
     <p>Get your NIN Plastic now — even if you never got it before. Don’t worry!</p>
     <button id="getNINBtn" class="gray-btn">Get NIN Plastic Now</button>
 
-    <p style="margin-top:20px; font-weight:bold;">Verify Me ✅</p>
+    <!-- Verify Me with Font Awesome verified icon -->
+    <p id="verifyMe" style="margin-top:20px; font-weight:bold;">
+      <i class="fa-solid fa-badge-check" aria-hidden="true" style="margin-right:8px;"></i> Verify Me
+    </p>
   </div>
 
   <!-- Add Fund Modal -->
@@ -430,6 +437,9 @@ animation: toast-in 260ms ease-out;
           localStorage.removeItem("ref");
           await updateBalance();
           if (historyDiv.style.display === 'block') await loadHistory();
+          // update verifyMe UI to show verified icon (optional)
+          const verifyMeEl = document.getElementById('verifyMe');
+          if (verifyMeEl) verifyMeEl.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true" style="margin-right:8px;"></i> Verified';
           return { ok: true, data };
         } else return { ok: false, data };
       } catch (err) {
