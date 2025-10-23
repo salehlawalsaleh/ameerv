@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>9jame Dashboard</title>
-  <!-- Font Awesome (for icons) -->
+  <!-- Font Awesome (kept, optional) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p1Cm6Y9K6Qe5j7G2y6r6Zg0Qkz1q3b9gkM3Y1P1YJ0gqQ+5x1JZ0+JxjF5rK7qV0J9yLz2bY0pE6v7q1l9Qxw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     body {
@@ -163,14 +163,26 @@ animation: toast-in 260ms ease-out;
 @keyframes toast-in { from { transform: translateY(10px) scale(.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
 @keyframes toast-out { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(10px) scale(.98); opacity: 0; } }
 
+/* Logout confirmation modal (keeps style consistent with fund modal) */
+#logoutModal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.logout-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; }
   </style>
 </head>
 <body>
   <header>
-    9jame Dashboard
-    <!-- Sign out button (icon-only) -->
+    <!-- Heading changed to VerifyMe as requested -->
+    VerifyMe
+    <!-- Sign out button (text) -->
     <button id="logoutBtn" class="green-btn" aria-label="Sign out" style="margin-left:12px; padding:8px 10px;">
-      <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+      Sign out
     </button>
   </header>
 
@@ -211,6 +223,18 @@ animation: toast-in 260ms ease-out;
       <div>
         <button id="payNowBtn">Pay Now</button>
         <button id="cancelBtn" class="gray-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout confirmation modal -->
+  <div id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+    <div class="modal-content" style="max-width:340px;">
+      <h3 id="logoutTitle">Confirm sign out</h3>
+      <p>Are you ready to Signout, but you can login back</p>
+      <div class="logout-actions">
+        <button id="confirmSignoutYes" class="green-btn">Yes</button>
+        <button id="confirmSignoutNo" class="gray-btn">No</button>
       </div>
     </div>
   </div>
@@ -309,6 +333,9 @@ animation: toast-in 260ms ease-out;
     const historyToggleBtn = document.getElementById("historyToggleBtn");
     const getNINBtn = document.getElementById("getNINBtn");
     const logoutBtn = document.getElementById("logoutBtn");
+    const logoutModal = document.getElementById("logoutModal");
+    const confirmYes = document.getElementById("confirmSignoutYes");
+    const confirmNo = document.getElementById("confirmSignoutNo");
 
     /* ======= State ======= */
     let currentUid = null;
@@ -558,9 +585,24 @@ animation: toast-in 260ms ease-out;
     /* ======= Get NIN button ======= */
     getNINBtn.onclick = () => { window.location.href = "ni.html"; };
 
-    /* ======= Logout handler ======= */
+    /* ======= Logout handler with confirmation ======= */
     if (logoutBtn) {
-      logoutBtn.onclick = async () => {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // show confirmation modal
+        if (logoutModal) logoutModal.style.display = 'flex';
+      });
+    }
+
+    if (confirmNo) {
+      confirmNo.addEventListener('click', () => {
+        if (logoutModal) logoutModal.style.display = 'none';
+      });
+    }
+
+    if (confirmYes) {
+      confirmYes.addEventListener('click', async () => {
+        if (logoutModal) logoutModal.style.display = 'none';
         try {
           await signOut(auth);
           showToast("Logged out.", "info", 1000);
@@ -569,7 +611,7 @@ animation: toast-in 260ms ease-out;
           console.error('logout error', e);
           showToast("Error logging out. Check console.", "error");
         }
-      };
+      });
     }
 
     /* ======= Initial safety UI ======= */
