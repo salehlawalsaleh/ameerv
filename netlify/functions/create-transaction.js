@@ -23,7 +23,7 @@ export async function handler(event) {
         amount: amount * 100,
         email: `${userId}@tech.net`,
         // callback now points to dashboard.html (make sure file exists and is deployed)
-        callback_url: `https://njame.netlify.app/dashboard.html?uid=${encodeURIComponent(userId)}`,
+        callback_url: `https://verifymynin.netlify.app/dashboard.html?uid=${encodeURIComponent(userId)}`,
       }),
     });
 
